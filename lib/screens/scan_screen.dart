@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -11,29 +13,45 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
-  MobileScannerController _controller = MobileScannerController();
+  // Controller créé seulement une fois la permission caméra accordée
+  // (autoStart: false → on démarre nous-mêmes, jamais avant la permission).
+  MobileScannerController? _controller;
   PermissionStatus? _permission;
   bool _navigating = false;
 
   @override
   void initState() {
     super.initState();
-    _demanderPermission();
+    _initialiser();
   }
 
-  Future<void> _demanderPermission() async {
+  Future<void> _initialiser() async {
     final status = await Permission.camera.request();
-    if (mounted) setState(() => _permission = status);
+    if (!mounted) return;
+    setState(() => _permission = status);
+    if (status.isGranted) {
+      await _demarrerController();
+    }
   }
 
-  void _recreerController() {
-    _controller.dispose();
-    setState(() => _controller = MobileScannerController());
+  Future<void> _demarrerController() async {
+    await _controller?.dispose();
+    final controller = MobileScannerController(autoStart: false);
+    if (!mounted) {
+      await controller.dispose();
+      return;
+    }
+    setState(() => _controller = controller);
+    try {
+      await controller.start();
+    } catch (_) {
+      // Toute erreur de démarrage est rendue par errorBuilder ci-dessous.
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -54,72 +72,85 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scanner un QR')),
+      body: _corps(),
+    );
+  }
+
+  Widget _corps() {
     final permission = _permission;
-    Widget corps;
     if (permission == null) {
-      corps = const Center(child: CircularProgressIndicator());
-    } else if (!permission.isGranted) {
-      corps = Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.no_photography, size: 64),
-              const SizedBox(height: 16),
-              const Text(
-                "L'accès à la caméra est nécessaire pour scanner les étiquettes QR.",
-                textAlign: TextAlign.center,
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (!permission.isGranted) {
+      return _MessageCentre(
+        icone: Icons.no_photography,
+        texte:
+            "L'accès à la caméra est nécessaire pour scanner les étiquettes QR.",
+        bouton: permission.isPermanentlyDenied
+            ? FilledButton(
+                onPressed: openAppSettings,
+                child: const Text('Ouvrir les réglages'),
+              )
+            : FilledButton(
+                onPressed: _initialiser,
+                child: const Text('Autoriser la caméra'),
               ),
-              const SizedBox(height: 16),
-              if (permission.isPermanentlyDenied)
-                FilledButton(
-                  onPressed: openAppSettings,
-                  child: const Text('Ouvrir les réglages'),
-                )
-              else
-                FilledButton(
-                  onPressed: _demanderPermission,
-                  child: const Text('Autoriser la caméra'),
-                ),
-            ],
-          ),
-        ),
-      );
-    } else {
-      corps = MobileScanner(
-        controller: _controller,
-        onDetect: _onDetect,
-        errorBuilder: (context, error, child) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erreur caméra : ${error.errorCode.name}\n'
-                    '${error.errorDetails?.message ?? ''}',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _recreerController,
-                    child: const Text('Réessayer'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Scanner un QR')),
-      body: corps,
+    final controller = _controller;
+    if (controller == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return MobileScanner(
+      controller: controller,
+      onDetect: _onDetect,
+      errorBuilder: (context, error) {
+        final details = error.errorDetails?.message;
+        return _MessageCentre(
+          icone: Icons.error_outline,
+          texte: 'Erreur caméra : ${error.errorCode.name}'
+              '${details != null && details.isNotEmpty ? '\n$details' : ''}',
+          bouton: FilledButton(
+            onPressed: _demarrerController,
+            child: const Text('Réessayer'),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MessageCentre extends StatelessWidget {
+  final IconData icone;
+  final String texte;
+  final Widget bouton;
+
+  const _MessageCentre({
+    required this.icone,
+    required this.texte,
+    required this.bouton,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icone, size: 64),
+            const SizedBox(height: 16),
+            Text(texte, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            bouton,
+          ],
+        ),
+      ),
     );
   }
 }
