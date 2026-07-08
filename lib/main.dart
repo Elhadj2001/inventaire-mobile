@@ -7,11 +7,12 @@ void main() {
   runApp(const ProviderScope(child: InventaireApp()));
 }
 
-class InventaireApp extends StatelessWidget {
+class InventaireApp extends ConsumerWidget {
   const InventaireApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Inventaire IPD',
       theme: ThemeData(

@@ -68,5 +68,7 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>La caméra est utilisée pour scanner les étiquettes QR des biens.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Les photos servent à illustrer les biens inventoriés.</string>
 </dict>
 </plist>

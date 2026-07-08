@@ -1,20 +1,20 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class ScanScreen extends StatefulWidget {
+import '../state/session.dart';
+
+class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
 
   @override
-  State<ScanScreen> createState() => _ScanScreenState();
+  ConsumerState<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> {
-  // Controller créé seulement une fois la permission caméra accordée
-  // (autoStart: false → on démarre nous-mêmes, jamais avant la permission).
+class _ScanScreenState extends ConsumerState<ScanScreen> {
   MobileScannerController? _controller;
   PermissionStatus? _permission;
   bool _navigating = false;
@@ -29,9 +29,7 @@ class _ScanScreenState extends State<ScanScreen> {
     final status = await Permission.camera.request();
     if (!mounted) return;
     setState(() => _permission = status);
-    if (status.isGranted) {
-      await _demarrerController();
-    }
+    if (status.isGranted) await _demarrerController();
   }
 
   Future<void> _demarrerController() async {
@@ -45,7 +43,7 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       await controller.start();
     } catch (_) {
-      // Toute erreur de démarrage est rendue par errorBuilder ci-dessous.
+      // errorBuilder affichera l'erreur.
     }
   }
 
@@ -55,7 +53,7 @@ class _ScanScreenState extends State<ScanScreen> {
     super.dispose();
   }
 
-  void _onDetect(BarcodeCapture capture) {
+  Future<void> _onDetect(BarcodeCapture capture) async {
     if (_navigating) return;
     final code = capture.barcodes
         .map((b) => b.rawValue)
@@ -65,58 +63,101 @@ class _ScanScreenState extends State<ScanScreen> {
         .firstOrNull;
     if (code == null) return;
     _navigating = true;
-    context.push('/bien/${Uri.encodeComponent(code)}').then((_) {
-      _navigating = false;
-    });
+    await _controller?.stop();
+    if (mounted) {
+      await context.push('/saisie/${Uri.encodeComponent(code)}');
+    }
+    // retour automatique au scanner
+    _navigating = false;
+    await _controller?.start();
   }
 
   @override
   Widget build(BuildContext context) {
+    final session = ref.watch(sessionProvider);
+    if (!session.pretAScanner) {
+      // sécurité : sans contexte complet, on ne scanne pas
+      return Scaffold(
+        appBar: AppBar(title: const Text('Scanner')),
+        body: const Center(child: Text('Contexte incomplet. Revenez à l’accueil.')),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Scanner un QR')),
-      body: _corps(),
+      appBar: AppBar(
+        title: const Text('Scanner'),
+        actions: [
+          if (_controller != null)
+            IconButton(
+              icon: const Icon(Icons.flash_on),
+              onPressed: () => _controller?.toggleTorch(),
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _Bandeau(session: session),
+          Expanded(child: _zoneCamera()),
+          _DerniersScans(session: session),
+        ],
+      ),
     );
   }
 
-  Widget _corps() {
+  Widget _zoneCamera() {
     final permission = _permission;
     if (permission == null) {
       return const Center(child: CircularProgressIndicator());
     }
     if (!permission.isGranted) {
-      return _MessageCentre(
-        icone: Icons.no_photography,
-        texte:
-            "L'accès à la caméra est nécessaire pour scanner les étiquettes QR.",
-        bouton: permission.isPermanentlyDenied
-            ? FilledButton(
-                onPressed: openAppSettings,
-                child: const Text('Ouvrir les réglages'),
-              )
-            : FilledButton(
-                onPressed: _initialiser,
-                child: const Text('Autoriser la caméra'),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.no_photography, size: 56),
+              const SizedBox(height: 12),
+              const Text(
+                "L'accès à la caméra est nécessaire pour scanner.",
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: permission.isPermanentlyDenied ? openAppSettings : _initialiser,
+                child: Text(permission.isPermanentlyDenied
+                    ? 'Ouvrir les réglages'
+                    : 'Autoriser la caméra'),
+              ),
+            ],
+          ),
+        ),
       );
     }
-
     final controller = _controller;
-    if (controller == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
+    if (controller == null) return const Center(child: CircularProgressIndicator());
     return MobileScanner(
       controller: controller,
       onDetect: _onDetect,
       errorBuilder: (context, error) {
         final details = error.errorDetails?.message;
-        return _MessageCentre(
-          icone: Icons.error_outline,
-          texte: 'Erreur caméra : ${error.errorCode.name}'
-              '${details != null && details.isNotEmpty ? '\n$details' : ''}',
-          bouton: FilledButton(
-            onPressed: _demarrerController,
-            child: const Text('Réessayer'),
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 56),
+                const SizedBox(height: 12),
+                Text(
+                  'Erreur caméra : ${error.errorCode.name}'
+                  '${details != null && details.isNotEmpty ? '\n$details' : ''}',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                FilledButton(onPressed: _demarrerController, child: const Text('Réessayer')),
+              ],
+            ),
           ),
         );
       },
@@ -124,32 +165,72 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 }
 
-class _MessageCentre extends StatelessWidget {
-  final IconData icone;
-  final String texte;
-  final Widget bouton;
-
-  const _MessageCentre({
-    required this.icone,
-    required this.texte,
-    required this.bouton,
-  });
+class _Bandeau extends StatelessWidget {
+  final SessionState session;
+  const _Bandeau({required this.session});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icone, size: 64),
-            const SizedBox(height: 16),
-            Text(texte, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            bouton,
-          ],
-        ),
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      color: scheme.primaryContainer,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${session.lieu!.nom} · ${session.service!.nom}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Chip(
+                label: Text('${session.nbScans} scan(s)'),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text('${session.piece!.code} — ${session.piece!.libelle}'),
+          if (session.responsable.isNotEmpty)
+            Text('Responsable : ${session.responsable}',
+                style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _DerniersScans extends StatelessWidget {
+  final SessionState session;
+  const _DerniersScans({required this.session});
+
+  @override
+  Widget build(BuildContext context) {
+    if (session.recents.isEmpty) return const SizedBox.shrink();
+    final heure = DateFormat('HH:mm:ss');
+    return SizedBox(
+      height: 132,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('Derniers scans de la pièce',
+                style: Theme.of(context).textTheme.labelMedium),
+          ),
+          for (final s in session.recents.take(4))
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.check, color: Colors.green),
+              title: Text('${s.numero} — ${s.designation}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text('${s.etat.label} · ${heure.format(s.horodatage)}'),
+            ),
+        ],
       ),
     );
   }
