@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/contexte_lieu_screen.dart';
 import '../screens/contexte_piece_screen.dart';
 import '../screens/contexte_service_screen.dart';
+import '../screens/file_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/progression_screen.dart';
@@ -36,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (c, s) => SaisieScreen(numero: s.pathParameters['numero']!),
       ),
       GoRoute(path: '/progression', builder: (c, s) => const ProgressionScreen()),
+      GoRoute(path: '/file', builder: (c, s) => const FileScreen()),
     ],
   );
 });

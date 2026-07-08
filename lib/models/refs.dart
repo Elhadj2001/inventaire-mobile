@@ -134,6 +134,23 @@ class Progression {
       );
 }
 
+/// Résultat par ligne d'un POST /sync/lignes-inventaire.
+class ResultatSync {
+  final String id;
+  final String statut; // creee | deja_synchronisee | rejetee
+  final String? motif;
+
+  const ResultatSync({required this.id, required this.statut, this.motif});
+
+  factory ResultatSync.fromJson(Map<String, dynamic> j) => ResultatSync(
+        id: j['id'] as String,
+        statut: j['statut'] as String,
+        motif: j['motif'] as String?,
+      );
+
+  bool get rejete => statut == 'rejetee';
+}
+
 /// Résultat d'un POST /lignes-inventaire.
 class LigneResultat {
   final String id;

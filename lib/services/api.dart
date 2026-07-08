@@ -138,6 +138,26 @@ class ApiService {
     return Progression.fromJson(r.data!);
   }
 
+  /// Export du référentiel pour le cache local. `depuis` = delta incrémental.
+  Future<Map<String, dynamic>> referentiel({String? depuis}) async {
+    final r = await _dio.get<Map<String, dynamic>>(
+      '/sync/referentiel',
+      queryParameters: {'depuis': ?depuis},
+    );
+    return r.data!;
+  }
+
+  /// Envoi d'un lot de lignes. Renvoie le résultat par ligne.
+  Future<List<ResultatSync>> syncLignes(List<Map<String, dynamic>> lignes) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/sync/lignes-inventaire',
+      data: {'lignes': lignes},
+    );
+    return (r.data!['resultats'] as List)
+        .map((e) => ResultatSync.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<String> uploadPhoto(String cheminFichier) async {
     final form = FormData.fromMap({'fichier': await MultipartFile.fromFile(cheminFichier)});
     final r = await _dio.post<Map<String, dynamic>>('/photos', data: form);

@@ -1,15 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/database.dart';
 import '../models/refs.dart';
-import '../services/api.dart';
 import '../state/session.dart';
+import '../state/sync_state.dart';
 
 class SaisieScreen extends ConsumerStatefulWidget {
   final String numero;
@@ -21,19 +23,17 @@ class SaisieScreen extends ConsumerStatefulWidget {
 
 class _SaisieScreenState extends ConsumerState<SaisieScreen> {
   final _commentaire = TextEditingController();
-  ResolutionBien? _resolution;
-  String? _erreurResolution;
+  BiensCacheData? _bien;
+  bool _resolu = false;
   EtatConstate? _etat;
-  String? _photoUrl;
   String? _photoLocale;
   bool _envoiEnCours = false;
-  bool _uploadEnCours = false;
   bool _forcerInconnu = false;
 
   @override
   void initState() {
     super.initState();
-    _resoudre();
+    _resoudreLocal();
   }
 
   @override
@@ -42,13 +42,14 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
     super.dispose();
   }
 
-  Future<void> _resoudre() async {
-    setState(() => _erreurResolution = null);
-    try {
-      final res = await ref.read(apiProvider).bienParNumero(widget.numero);
-      if (mounted) setState(() => _resolution = res);
-    } catch (e) {
-      if (mounted) setState(() => _erreurResolution = '$e');
+  /// Résolution locale (cache) : plus aucune dépendance réseau pour la fiche.
+  Future<void> _resoudreLocal() async {
+    final bien = await ref.read(appDatabaseProvider).bienParNumero(widget.numero);
+    if (mounted) {
+      setState(() {
+        _bien = bien;
+        _resolu = true;
+      });
     }
   }
 
@@ -76,80 +77,50 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
     if (source == null) return;
     final fichier = await ImagePicker().pickImage(source: source, imageQuality: 70, maxWidth: 1600);
     if (fichier == null) return;
-    setState(() {
-      _uploadEnCours = true;
-      _photoLocale = fichier.path;
-    });
-    try {
-      final url = await ref.read(apiProvider).uploadPhoto(fichier.path);
-      if (mounted) setState(() => _photoUrl = url);
-    } on DioException catch (e) {
-      if (mounted) {
-        final msg = e.response?.statusCode == 503
-            ? 'Upload de photos non configuré côté serveur — la photo est ignorée.'
-            : 'Échec de l’upload de la photo.';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-        setState(() => _photoLocale = null);
-      }
-    } finally {
-      if (mounted) setState(() => _uploadEnCours = false);
-    }
+    // La photo est conservée localement ; l'upload se fait à la synchro (offline-first).
+    setState(() => _photoLocale = fichier.path);
   }
 
-  Future<void> _envoyer() async {
+  Future<void> _enregistrer() async {
     final session = ref.read(sessionProvider);
     if (_etat == null || !session.pretAScanner) return;
     setState(() => _envoiEnCours = true);
 
-    final api = ref.read(apiProvider);
-    final designation = switch (_resolution) {
-      BienTrouve(bien: final b) => b.designation,
-      _ => 'À identifier — ${widget.numero}',
-    };
-    try {
-      final resultat = await api.creerLigne(
-        id: const Uuid().v4(),
-        campagneId: session.campagne!.id,
-        // On passe toujours le numéro : le serveur résout un bien connu ou crée
-        // un bien « scan_inconnu » (bien_cree=true) dans la même transaction.
-        numeroInventaire: widget.numero,
-        pieceId: session.piece!.id,
-        serviceId: session.service!.id,
-        responsable: session.responsable,
-        etat: _etat!,
-        commentaire: _commentaire.text,
-        photoUrl: _photoUrl,
-        scanneLe: DateTime.now(),
+    final db = ref.read(appDatabaseProvider);
+    final service = session.service!;
+    // Le service choisi est-il provisoire (créé offline) ?
+    final provisoire = await db.serviceProvisoire(service.id);
+
+    final designation = _bien?.designation ?? 'À identifier — ${widget.numero}';
+    await db.enfilerScan(ScansLocauxCompanion.insert(
+      id: const Uuid().v4(),
+      campagneId: session.campagne!.id,
+      numeroInventaire: widget.numero,
+      pieceId: session.piece!.id,
+      serviceId: Value(provisoire == null ? service.id : provisoire.serverId),
+      serviceLocalId: Value(provisoire == null ? null : service.id),
+      responsable: Value(session.responsable.isEmpty ? null : session.responsable),
+      etat: _etat!.api,
+      commentaire: Value(_commentaire.text.isEmpty ? null : _commentaire.text),
+      photoLocale: Value(_photoLocale),
+      scanneLe: DateTime.now(), // heure de l'appareil au moment du scan
+      creeLe: DateTime.now(),
+    ));
+
+    ref.read(sessionProvider.notifier).ajouterScan(ScanRecent(
+          numero: widget.numero,
+          designation: designation,
+          etat: _etat!,
+          horodatage: DateTime.now(),
+        ));
+    // Déclenche la synchro en arrière-plan (sans bloquer le retour au scanner).
+    unawaited(ref.read(syncControllerProvider.notifier).synchroniser());
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Scan enregistré (en file de synchronisation).')),
       );
-      ref.read(sessionProvider.notifier).ajouterScan(
-            ScanRecent(
-              numero: widget.numero,
-              designation: designation,
-              etat: _etat!,
-              horodatage: DateTime.now(),
-            ),
-          );
-      if (mounted) {
-        final msg = resultat.dejaEnregistre
-            ? 'Déjà enregistré (rejeu ignoré).'
-            : resultat.bienCree
-                ? 'Enregistré — nouveau bien « à identifier » créé.'
-                : 'Scan enregistré.';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-        context.pop();
-      }
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      final msg = switch (code) {
-        409 => 'Campagne clôturée : enregistrement impossible.',
-        422 => 'Incohérence : le service et la pièce ne sont pas du même lieu.',
-        _ => 'Échec de l’envoi (${code ?? e.type.name}).',
-      };
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      }
-    } finally {
-      if (mounted) setState(() => _envoiEnCours = false);
+      context.pop();
     }
   }
 
@@ -162,21 +133,15 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
   }
 
   Widget _corps() {
-    if (_erreurResolution != null) {
-      return _centre(Icons.cloud_off, 'Erreur', _erreurResolution!, action: FilledButton(
-        onPressed: _resoudre,
-        child: const Text('Réessayer'),
-      ));
-    }
-    final res = _resolution;
-    if (res == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (res is BienInconnu && !_forcerInconnu) {
+    if (!_resolu) return const Center(child: CircularProgressIndicator());
+
+    final inconnu = _bien == null;
+    if (inconnu && !_forcerInconnu) {
       return _centre(
         Icons.help_outline,
-        'Bien inconnu',
-        'Le code « ${widget.numero} » n’est pas dans le référentiel.',
+        'Bien inconnu du cache',
+        'Le code « ${widget.numero} » n’est pas dans le référentiel local. '
+            'Vous pouvez tout de même l’enregistrer (il sera créé « à identifier »).',
         action: Column(
           children: [
             FilledButton(
@@ -189,8 +154,7 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
         ),
       );
     }
-    final inconnu = res is BienInconnu;
-    final bien = res is BienTrouve ? res.bien : null;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -204,9 +168,15 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
                 Text('N° ${widget.numero}', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 4),
                 Text(
-                  bien?.designation ?? 'Bien non répertorié (sera créé « à identifier »)',
+                  _bien?.designation ?? 'Bien non répertorié (sera créé « à identifier »)',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                if (_bien != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('Statut (cache) : ${_bien!.statut}',
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ),
               ],
             ),
           ),
@@ -235,48 +205,30 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _sectionPhoto(),
+        Row(
+          children: [
+            if (_photoLocale != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(File(_photoLocale!), width: 64, height: 64, fit: BoxFit.cover),
+                ),
+              ),
+            OutlinedButton.icon(
+              onPressed: _choisirPhoto,
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: Text(_photoLocale == null ? 'Ajouter une photo' : 'Changer la photo'),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         FilledButton.icon(
-          onPressed: (_etat == null || _envoiEnCours || _uploadEnCours)
-              ? null
-              : _envoyer,
+          onPressed: (_etat == null || _envoiEnCours) ? null : _enregistrer,
           icon: _envoiEnCours
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.save),
           label: const Text('Enregistrer le scan'),
-        ),
-      ],
-    );
-  }
-
-  Widget _sectionPhoto() {
-    return Row(
-      children: [
-        if (_photoLocale != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(File(_photoLocale!), width: 64, height: 64, fit: BoxFit.cover),
-                ),
-                if (_uploadEnCours) const CircularProgressIndicator(),
-                if (_photoUrl != null)
-                  const Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  ),
-              ],
-            ),
-          ),
-        OutlinedButton.icon(
-          onPressed: _uploadEnCours ? null : _choisirPhoto,
-          icon: const Icon(Icons.add_a_photo_outlined),
-          label: Text(_photoUrl == null ? 'Ajouter une photo' : 'Changer la photo'),
         ),
       ],
     );

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/database.dart';
 import '../models/refs.dart';
-import '../services/api.dart';
 import '../state/session.dart';
+import '../state/sync_state.dart';
 
-final _lieuxProvider = FutureProvider.autoDispose<List<Lieu>>((ref) {
-  return ref.watch(apiProvider).lieux();
+// Lecture depuis le cache local (offline).
+final _lieuxCacheProvider = FutureProvider.autoDispose<List<LieuxCacheData>>((ref) {
+  return ref.watch(appDatabaseProvider).lieux();
 });
 
 class ContexteLieuScreen extends ConsumerWidget {
@@ -15,46 +17,44 @@ class ContexteLieuScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lieuxAsync = ref.watch(_lieuxProvider);
+    final async = ref.watch(_lieuxCacheProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('1. Choisir le lieu')),
-      body: lieuxAsync.when(
+      body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_off, size: 56),
-                const SizedBox(height: 12),
-                Text('$e', textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(_lieuxProvider),
-                  child: const Text('Réessayer'),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (lieux) {
+          if (lieux.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Référentiel non encore téléchargé.\nConnectez-vous une fois avec du réseau.',
+                  textAlign: TextAlign.center,
                 ),
-              ],
-            ),
-          ),
-        ),
-        data: (lieux) => ListView.separated(
-          itemCount: lieux.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, i) {
-            final lieu = lieux[i];
-            return ListTile(
-              leading: CircleAvatar(child: Text(lieu.code.substring(2))),
-              title: Text(lieu.nom),
-              subtitle: Text(lieu.code),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                ref.read(sessionProvider.notifier).setLieu(lieu);
-                context.push('/contexte/service');
-              },
+              ),
             );
-          },
-        ),
+          }
+          return ListView.separated(
+            itemCount: lieux.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, i) {
+              final l = lieux[i];
+              return ListTile(
+                leading: CircleAvatar(child: Text(l.code.substring(2))),
+                title: Text(l.nom),
+                subtitle: Text(l.code),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  ref.read(sessionProvider.notifier).setLieu(
+                        Lieu(id: l.id, code: l.code, nom: l.nom),
+                      );
+                  context.push('/contexte/service');
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
