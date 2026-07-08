@@ -1,0 +1,26 @@
+name: inventaire_mobile
+description: "Application d'inventaire par scan QR — Institut Pasteur de Dakar"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  go_router: ^16.0.0
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  mobile_scanner: ^5.2.3
+  qr_flutter: ^4.1.0
+  permission_handler: ^12.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
