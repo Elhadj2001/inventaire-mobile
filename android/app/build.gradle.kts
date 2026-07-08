@@ -30,6 +30,15 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+
+            // R8 est actif en release : on lui fournit explicitement les règles keep
+            // pour ML Kit / CameraX (voir proguard-rules.pro), sinon les classes du
+            // scanner chargées par réflexion sont élaguées -> NPE caméra genericError.
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
