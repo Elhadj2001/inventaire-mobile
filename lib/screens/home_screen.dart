@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../app/theme.dart';
 import '../state/auth.dart';
 import '../state/session.dart';
 import '../state/sync_state.dart';
@@ -106,7 +107,7 @@ class _BandeauSync extends ConsumerWidget {
               children: [
                 Icon(
                   enAttente > 0 ? Icons.cloud_upload : Icons.cloud_done,
-                  color: enAttente > 0 ? Colors.orange : Colors.green,
+                  color: enAttente > 0 ? IpdCouleurs.ambre : IpdCouleurs.vert,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -231,7 +232,7 @@ class _LigneContexte extends StatelessWidget {
     return ListTile(
       dense: true,
       leading: Icon(ok ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: ok ? Colors.green : null),
+          color: ok ? IpdCouleurs.vert : null),
       title: Text(label),
       subtitle: Text(valeur ?? 'Non défini'),
     );

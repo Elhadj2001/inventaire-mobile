@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../app/theme.dart';
 import '../state/session.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -225,7 +226,7 @@ class _DerniersScans extends StatelessWidget {
           for (final s in session.recents.take(4))
             ListTile(
               dense: true,
-              leading: const Icon(Icons.check, color: Colors.green),
+              leading: const Icon(Icons.check, color: IpdCouleurs.vert),
               title: Text('${s.numero} — ${s.designation}',
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text('${s.etat.label} · ${heure.format(s.horodatage)}'),

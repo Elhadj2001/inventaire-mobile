@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/router.dart';
+import 'app/theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: InventaireApp()));
@@ -15,10 +16,7 @@ class InventaireApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Inventaire IPD',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00695C)),
-        useMaterial3: true,
-      ),
+      theme: themeIpd(),
       routerConfig: router,
     );
   }

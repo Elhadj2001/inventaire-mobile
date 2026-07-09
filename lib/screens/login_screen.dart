@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/config.dart';
+import '../app/theme.dart';
 import '../state/auth.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -50,12 +51,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.inventory_2_outlined, size: 72),
-              const SizedBox(height: 8),
+              Image.asset('assets/logo_ipd_couleur.png', height: 64),
+              const SizedBox(height: 14),
               Text(
-                'Inventaire IPD',
+                'Inventaire',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const Text(
+                'Institut Pasteur de Dakar',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: IpdCouleurs.bleu, fontWeight: FontWeight.w300),
               ),
               const SizedBox(height: 32),
               TextField(

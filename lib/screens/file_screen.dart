@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../app/theme.dart';
 import '../data/database.dart';
 import '../state/sync_state.dart';
 
@@ -50,9 +51,9 @@ class FileScreen extends ConsumerWidget {
             itemBuilder: (context, i) {
               final s = scans[i];
               final (icone, couleur) = switch (s.statut) {
-                'synchronise' => (Icons.cloud_done, Colors.green),
-                'rejete' => (Icons.error_outline, Colors.red),
-                _ => (Icons.schedule, Colors.orange),
+                'synchronise' => (Icons.cloud_done, IpdCouleurs.vert),
+                'rejete' => (Icons.error_outline, IpdCouleurs.rouge),
+                _ => (Icons.schedule, IpdCouleurs.ambre),
               };
               return ListTile(
                 leading: Icon(icone, color: couleur),
