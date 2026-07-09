@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../app/theme.dart';
 import '../data/database.dart';
 import '../models/refs.dart';
 import '../state/session.dart';
@@ -29,6 +31,7 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
   String? _photoLocale;
   bool _envoiEnCours = false;
   bool _forcerInconnu = false;
+  DejaScanne? _deja;
 
   @override
   void initState() {
@@ -42,12 +45,16 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
     super.dispose();
   }
 
-  /// Résolution locale (cache) : plus aucune dépendance réseau pour la fiche.
+  /// Résolution locale (cache) + vérification instantanée « déjà scanné ».
   Future<void> _resoudreLocal() async {
-    final bien = await ref.read(appDatabaseProvider).bienParNumero(widget.numero);
+    final db = ref.read(appDatabaseProvider);
+    final bien = await db.bienParNumero(widget.numero);
+    final campagne = ref.read(sessionProvider).campagne;
+    final deja = campagne == null ? null : await db.dejaScanne(campagne.id, widget.numero);
     if (mounted) {
       setState(() {
         _bien = bien;
+        _deja = deja;
         _resolu = true;
       });
     }
@@ -84,6 +91,10 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
   Future<void> _enregistrer() async {
     final session = ref.read(sessionProvider);
     if (_etat == null || !session.pretAScanner) return;
+
+    // Alerte « déjà scanné » : plusieurs scans restent autorisés, mais on avertit.
+    if (_deja != null && !await _confirmerDoublon()) return;
+
     setState(() => _envoiEnCours = true);
 
     final db = ref.read(appDatabaseProvider);
@@ -112,6 +123,7 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
           designation: designation,
           etat: _etat!,
           horodatage: DateTime.now(),
+          deja: _deja != null,
         ));
     // Déclenche la synchro en arrière-plan (sans bloquer le retour au scanner).
     unawaited(ref.read(syncControllerProvider.notifier).synchroniser());
@@ -122,6 +134,29 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
       );
       context.pop();
     }
+  }
+
+  String _messageDeja() {
+    final d = _deja!;
+    final quand = DateFormat('dd/MM à HH:mm').format(d.scanneLe.toLocal());
+    final ou = d.pieceCode.isEmpty ? '' : ' dans ${d.pieceCode}';
+    return 'Déjà scanné dans cette campagne — le $quand par ${d.par}$ou';
+  }
+
+  Future<bool> _confirmerDoublon() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: IpdCouleurs.ambre, size: 40),
+        title: const Text('Déjà scanné'),
+        content: Text('${_messageDeja()}.\n\nEnregistrer quand même un nouveau scan ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Enregistrer quand même')),
+        ],
+      ),
+    );
+    return ok ?? false;
   }
 
   @override
@@ -158,6 +193,26 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (_deja != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: IpdCouleurs.ambreTint,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF0DCAE)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: IpdCouleurs.ambreFonce),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('⚠ ${_messageDeja()}',
+                      style: const TextStyle(color: IpdCouleurs.ambreFonce, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
         Card(
           color: inconnu ? Theme.of(context).colorScheme.errorContainer : null,
           child: Padding(

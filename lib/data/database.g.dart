@@ -2737,6 +2737,420 @@ class MetaCompanion extends UpdateCompanion<MetaData> {
   }
 }
 
+class $ScansCampagneTable extends ScansCampagne
+    with TableInfo<$ScansCampagneTable, ScansCampagneData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScansCampagneTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _campagneIdMeta = const VerificationMeta(
+    'campagneId',
+  );
+  @override
+  late final GeneratedColumn<String> campagneId = GeneratedColumn<String>(
+    'campagne_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bienIdMeta = const VerificationMeta('bienId');
+  @override
+  late final GeneratedColumn<String> bienId = GeneratedColumn<String>(
+    'bien_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _numeroMeta = const VerificationMeta('numero');
+  @override
+  late final GeneratedColumn<String> numero = GeneratedColumn<String>(
+    'numero',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scanneLeMeta = const VerificationMeta(
+    'scanneLe',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scanneLe = GeneratedColumn<DateTime>(
+    'scanne_le',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _agentNomMeta = const VerificationMeta(
+    'agentNom',
+  );
+  @override
+  late final GeneratedColumn<String> agentNom = GeneratedColumn<String>(
+    'agent_nom',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pieceCodeMeta = const VerificationMeta(
+    'pieceCode',
+  );
+  @override
+  late final GeneratedColumn<String> pieceCode = GeneratedColumn<String>(
+    'piece_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    campagneId,
+    bienId,
+    numero,
+    scanneLe,
+    agentNom,
+    pieceCode,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scans_campagne';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScansCampagneData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('campagne_id')) {
+      context.handle(
+        _campagneIdMeta,
+        campagneId.isAcceptableOrUnknown(data['campagne_id']!, _campagneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_campagneIdMeta);
+    }
+    if (data.containsKey('bien_id')) {
+      context.handle(
+        _bienIdMeta,
+        bienId.isAcceptableOrUnknown(data['bien_id']!, _bienIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bienIdMeta);
+    }
+    if (data.containsKey('numero')) {
+      context.handle(
+        _numeroMeta,
+        numero.isAcceptableOrUnknown(data['numero']!, _numeroMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numeroMeta);
+    }
+    if (data.containsKey('scanne_le')) {
+      context.handle(
+        _scanneLeMeta,
+        scanneLe.isAcceptableOrUnknown(data['scanne_le']!, _scanneLeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scanneLeMeta);
+    }
+    if (data.containsKey('agent_nom')) {
+      context.handle(
+        _agentNomMeta,
+        agentNom.isAcceptableOrUnknown(data['agent_nom']!, _agentNomMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_agentNomMeta);
+    }
+    if (data.containsKey('piece_code')) {
+      context.handle(
+        _pieceCodeMeta,
+        pieceCode.isAcceptableOrUnknown(data['piece_code']!, _pieceCodeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pieceCodeMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {campagneId, bienId};
+  @override
+  ScansCampagneData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScansCampagneData(
+      campagneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campagne_id'],
+      )!,
+      bienId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bien_id'],
+      )!,
+      numero: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}numero'],
+      )!,
+      scanneLe: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scanne_le'],
+      )!,
+      agentNom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_nom'],
+      )!,
+      pieceCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_code'],
+      )!,
+    );
+  }
+
+  @override
+  $ScansCampagneTable createAlias(String alias) {
+    return $ScansCampagneTable(attachedDatabase, alias);
+  }
+}
+
+class ScansCampagneData extends DataClass
+    implements Insertable<ScansCampagneData> {
+  final String campagneId;
+  final String bienId;
+  final String numero;
+  final DateTime scanneLe;
+  final String agentNom;
+  final String pieceCode;
+  const ScansCampagneData({
+    required this.campagneId,
+    required this.bienId,
+    required this.numero,
+    required this.scanneLe,
+    required this.agentNom,
+    required this.pieceCode,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['campagne_id'] = Variable<String>(campagneId);
+    map['bien_id'] = Variable<String>(bienId);
+    map['numero'] = Variable<String>(numero);
+    map['scanne_le'] = Variable<DateTime>(scanneLe);
+    map['agent_nom'] = Variable<String>(agentNom);
+    map['piece_code'] = Variable<String>(pieceCode);
+    return map;
+  }
+
+  ScansCampagneCompanion toCompanion(bool nullToAbsent) {
+    return ScansCampagneCompanion(
+      campagneId: Value(campagneId),
+      bienId: Value(bienId),
+      numero: Value(numero),
+      scanneLe: Value(scanneLe),
+      agentNom: Value(agentNom),
+      pieceCode: Value(pieceCode),
+    );
+  }
+
+  factory ScansCampagneData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScansCampagneData(
+      campagneId: serializer.fromJson<String>(json['campagneId']),
+      bienId: serializer.fromJson<String>(json['bienId']),
+      numero: serializer.fromJson<String>(json['numero']),
+      scanneLe: serializer.fromJson<DateTime>(json['scanneLe']),
+      agentNom: serializer.fromJson<String>(json['agentNom']),
+      pieceCode: serializer.fromJson<String>(json['pieceCode']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'campagneId': serializer.toJson<String>(campagneId),
+      'bienId': serializer.toJson<String>(bienId),
+      'numero': serializer.toJson<String>(numero),
+      'scanneLe': serializer.toJson<DateTime>(scanneLe),
+      'agentNom': serializer.toJson<String>(agentNom),
+      'pieceCode': serializer.toJson<String>(pieceCode),
+    };
+  }
+
+  ScansCampagneData copyWith({
+    String? campagneId,
+    String? bienId,
+    String? numero,
+    DateTime? scanneLe,
+    String? agentNom,
+    String? pieceCode,
+  }) => ScansCampagneData(
+    campagneId: campagneId ?? this.campagneId,
+    bienId: bienId ?? this.bienId,
+    numero: numero ?? this.numero,
+    scanneLe: scanneLe ?? this.scanneLe,
+    agentNom: agentNom ?? this.agentNom,
+    pieceCode: pieceCode ?? this.pieceCode,
+  );
+  ScansCampagneData copyWithCompanion(ScansCampagneCompanion data) {
+    return ScansCampagneData(
+      campagneId: data.campagneId.present
+          ? data.campagneId.value
+          : this.campagneId,
+      bienId: data.bienId.present ? data.bienId.value : this.bienId,
+      numero: data.numero.present ? data.numero.value : this.numero,
+      scanneLe: data.scanneLe.present ? data.scanneLe.value : this.scanneLe,
+      agentNom: data.agentNom.present ? data.agentNom.value : this.agentNom,
+      pieceCode: data.pieceCode.present ? data.pieceCode.value : this.pieceCode,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScansCampagneData(')
+          ..write('campagneId: $campagneId, ')
+          ..write('bienId: $bienId, ')
+          ..write('numero: $numero, ')
+          ..write('scanneLe: $scanneLe, ')
+          ..write('agentNom: $agentNom, ')
+          ..write('pieceCode: $pieceCode')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(campagneId, bienId, numero, scanneLe, agentNom, pieceCode);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScansCampagneData &&
+          other.campagneId == this.campagneId &&
+          other.bienId == this.bienId &&
+          other.numero == this.numero &&
+          other.scanneLe == this.scanneLe &&
+          other.agentNom == this.agentNom &&
+          other.pieceCode == this.pieceCode);
+}
+
+class ScansCampagneCompanion extends UpdateCompanion<ScansCampagneData> {
+  final Value<String> campagneId;
+  final Value<String> bienId;
+  final Value<String> numero;
+  final Value<DateTime> scanneLe;
+  final Value<String> agentNom;
+  final Value<String> pieceCode;
+  final Value<int> rowid;
+  const ScansCampagneCompanion({
+    this.campagneId = const Value.absent(),
+    this.bienId = const Value.absent(),
+    this.numero = const Value.absent(),
+    this.scanneLe = const Value.absent(),
+    this.agentNom = const Value.absent(),
+    this.pieceCode = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ScansCampagneCompanion.insert({
+    required String campagneId,
+    required String bienId,
+    required String numero,
+    required DateTime scanneLe,
+    required String agentNom,
+    required String pieceCode,
+    this.rowid = const Value.absent(),
+  }) : campagneId = Value(campagneId),
+       bienId = Value(bienId),
+       numero = Value(numero),
+       scanneLe = Value(scanneLe),
+       agentNom = Value(agentNom),
+       pieceCode = Value(pieceCode);
+  static Insertable<ScansCampagneData> custom({
+    Expression<String>? campagneId,
+    Expression<String>? bienId,
+    Expression<String>? numero,
+    Expression<DateTime>? scanneLe,
+    Expression<String>? agentNom,
+    Expression<String>? pieceCode,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (campagneId != null) 'campagne_id': campagneId,
+      if (bienId != null) 'bien_id': bienId,
+      if (numero != null) 'numero': numero,
+      if (scanneLe != null) 'scanne_le': scanneLe,
+      if (agentNom != null) 'agent_nom': agentNom,
+      if (pieceCode != null) 'piece_code': pieceCode,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ScansCampagneCompanion copyWith({
+    Value<String>? campagneId,
+    Value<String>? bienId,
+    Value<String>? numero,
+    Value<DateTime>? scanneLe,
+    Value<String>? agentNom,
+    Value<String>? pieceCode,
+    Value<int>? rowid,
+  }) {
+    return ScansCampagneCompanion(
+      campagneId: campagneId ?? this.campagneId,
+      bienId: bienId ?? this.bienId,
+      numero: numero ?? this.numero,
+      scanneLe: scanneLe ?? this.scanneLe,
+      agentNom: agentNom ?? this.agentNom,
+      pieceCode: pieceCode ?? this.pieceCode,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (campagneId.present) {
+      map['campagne_id'] = Variable<String>(campagneId.value);
+    }
+    if (bienId.present) {
+      map['bien_id'] = Variable<String>(bienId.value);
+    }
+    if (numero.present) {
+      map['numero'] = Variable<String>(numero.value);
+    }
+    if (scanneLe.present) {
+      map['scanne_le'] = Variable<DateTime>(scanneLe.value);
+    }
+    if (agentNom.present) {
+      map['agent_nom'] = Variable<String>(agentNom.value);
+    }
+    if (pieceCode.present) {
+      map['piece_code'] = Variable<String>(pieceCode.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScansCampagneCompanion(')
+          ..write('campagneId: $campagneId, ')
+          ..write('bienId: $bienId, ')
+          ..write('numero: $numero, ')
+          ..write('scanneLe: $scanneLe, ')
+          ..write('agentNom: $agentNom, ')
+          ..write('pieceCode: $pieceCode, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2747,6 +3161,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ServicesLocauxTable servicesLocaux = $ServicesLocauxTable(this);
   late final $ScansLocauxTable scansLocaux = $ScansLocauxTable(this);
   late final $MetaTable meta = $MetaTable(this);
+  late final $ScansCampagneTable scansCampagne = $ScansCampagneTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2759,6 +3174,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     servicesLocaux,
     scansLocaux,
     meta,
+    scansCampagne,
   ];
 }
 
@@ -4249,6 +4665,231 @@ typedef $$MetaTableProcessedTableManager =
       MetaData,
       PrefetchHooks Function()
     >;
+typedef $$ScansCampagneTableCreateCompanionBuilder =
+    ScansCampagneCompanion Function({
+      required String campagneId,
+      required String bienId,
+      required String numero,
+      required DateTime scanneLe,
+      required String agentNom,
+      required String pieceCode,
+      Value<int> rowid,
+    });
+typedef $$ScansCampagneTableUpdateCompanionBuilder =
+    ScansCampagneCompanion Function({
+      Value<String> campagneId,
+      Value<String> bienId,
+      Value<String> numero,
+      Value<DateTime> scanneLe,
+      Value<String> agentNom,
+      Value<String> pieceCode,
+      Value<int> rowid,
+    });
+
+class $$ScansCampagneTableFilterComposer
+    extends Composer<_$AppDatabase, $ScansCampagneTable> {
+  $$ScansCampagneTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bienId => $composableBuilder(
+    column: $table.bienId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get numero => $composableBuilder(
+    column: $table.numero,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scanneLe => $composableBuilder(
+    column: $table.scanneLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentNom => $composableBuilder(
+    column: $table.agentNom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceCode => $composableBuilder(
+    column: $table.pieceCode,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScansCampagneTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScansCampagneTable> {
+  $$ScansCampagneTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bienId => $composableBuilder(
+    column: $table.bienId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get numero => $composableBuilder(
+    column: $table.numero,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scanneLe => $composableBuilder(
+    column: $table.scanneLe,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentNom => $composableBuilder(
+    column: $table.agentNom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceCode => $composableBuilder(
+    column: $table.pieceCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScansCampagneTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScansCampagneTable> {
+  $$ScansCampagneTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bienId =>
+      $composableBuilder(column: $table.bienId, builder: (column) => column);
+
+  GeneratedColumn<String> get numero =>
+      $composableBuilder(column: $table.numero, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scanneLe =>
+      $composableBuilder(column: $table.scanneLe, builder: (column) => column);
+
+  GeneratedColumn<String> get agentNom =>
+      $composableBuilder(column: $table.agentNom, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceCode =>
+      $composableBuilder(column: $table.pieceCode, builder: (column) => column);
+}
+
+class $$ScansCampagneTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScansCampagneTable,
+          ScansCampagneData,
+          $$ScansCampagneTableFilterComposer,
+          $$ScansCampagneTableOrderingComposer,
+          $$ScansCampagneTableAnnotationComposer,
+          $$ScansCampagneTableCreateCompanionBuilder,
+          $$ScansCampagneTableUpdateCompanionBuilder,
+          (
+            ScansCampagneData,
+            BaseReferences<
+              _$AppDatabase,
+              $ScansCampagneTable,
+              ScansCampagneData
+            >,
+          ),
+          ScansCampagneData,
+          PrefetchHooks Function()
+        > {
+  $$ScansCampagneTableTableManager(_$AppDatabase db, $ScansCampagneTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScansCampagneTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScansCampagneTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScansCampagneTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> campagneId = const Value.absent(),
+                Value<String> bienId = const Value.absent(),
+                Value<String> numero = const Value.absent(),
+                Value<DateTime> scanneLe = const Value.absent(),
+                Value<String> agentNom = const Value.absent(),
+                Value<String> pieceCode = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ScansCampagneCompanion(
+                campagneId: campagneId,
+                bienId: bienId,
+                numero: numero,
+                scanneLe: scanneLe,
+                agentNom: agentNom,
+                pieceCode: pieceCode,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String campagneId,
+                required String bienId,
+                required String numero,
+                required DateTime scanneLe,
+                required String agentNom,
+                required String pieceCode,
+                Value<int> rowid = const Value.absent(),
+              }) => ScansCampagneCompanion.insert(
+                campagneId: campagneId,
+                bienId: bienId,
+                numero: numero,
+                scanneLe: scanneLe,
+                agentNom: agentNom,
+                pieceCode: pieceCode,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScansCampagneTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScansCampagneTable,
+      ScansCampagneData,
+      $$ScansCampagneTableFilterComposer,
+      $$ScansCampagneTableOrderingComposer,
+      $$ScansCampagneTableAnnotationComposer,
+      $$ScansCampagneTableCreateCompanionBuilder,
+      $$ScansCampagneTableUpdateCompanionBuilder,
+      (
+        ScansCampagneData,
+        BaseReferences<_$AppDatabase, $ScansCampagneTable, ScansCampagneData>,
+      ),
+      ScansCampagneData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4266,4 +4907,6 @@ class $AppDatabaseManager {
   $$ScansLocauxTableTableManager get scansLocaux =>
       $$ScansLocauxTableTableManager(_db, _db.scansLocaux);
   $$MetaTableTableManager get meta => $$MetaTableTableManager(_db, _db.meta);
+  $$ScansCampagneTableTableManager get scansCampagne =>
+      $$ScansCampagneTableTableManager(_db, _db.scansCampagne);
 }

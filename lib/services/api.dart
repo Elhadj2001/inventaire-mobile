@@ -147,6 +147,15 @@ class ApiService {
     return r.data!;
   }
 
+  /// Résumé des biens déjà scannés dans une campagne (alerte « déjà scanné »).
+  Future<Map<String, dynamic>> scansResume(String campagneId, {String? depuis}) async {
+    final r = await _dio.get<Map<String, dynamic>>(
+      '/campagnes/$campagneId/scans-resume',
+      queryParameters: {'depuis': ?depuis},
+    );
+    return r.data!;
+  }
+
   /// Envoi d'un lot de lignes. Renvoie le résultat par ligne.
   Future<List<ResultatSync>> syncLignes(List<Map<String, dynamic>> lignes) async {
     final r = await _dio.post<Map<String, dynamic>>(

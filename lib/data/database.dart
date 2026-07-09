@@ -80,14 +80,43 @@ class Meta extends Table {
   Set<Column> get primaryKey => {cle};
 }
 
+/// Résumé serveur des biens déjà scannés dans la campagne (pour l'alerte « déjà scanné »).
+class ScansCampagne extends Table {
+  TextColumn get campagneId => text()();
+  TextColumn get bienId => text()();
+  TextColumn get numero => text()();
+  DateTimeColumn get scanneLe => dateTime()();
+  TextColumn get agentNom => text()();
+  TextColumn get pieceCode => text()();
+
+  @override
+  Set<Column> get primaryKey => {campagneId, bienId};
+}
+
+/// Info « déjà scanné » agrégée (serveur + local).
+class DejaScanne {
+  final DateTime scanneLe;
+  final String par;
+  final String pieceCode;
+  const DejaScanne(this.scanneLe, this.par, this.pieceCode);
+}
+
 @DriftDatabase(
-  tables: [LieuxCache, ServicesCache, PiecesCache, BiensCache, ServicesLocaux, ScansLocaux, Meta],
+  tables: [LieuxCache, ServicesCache, PiecesCache, BiensCache, ServicesLocaux, ScansLocaux, Meta, ScansCampagne],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'inventaire'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) await m.createTable(scansCampagne);
+        },
+      );
 
   // ----- meta
   Future<String?> lireMeta(String cle) async {
@@ -101,6 +130,55 @@ class AppDatabase extends _$AppDatabase {
   // ----- résolution locale d'un bien par numéro
   Future<BiensCacheData?> bienParNumero(String numero) =>
       (select(biensCache)..where((b) => b.numeroInventaire.equals(numero.trim()))).getSingleOrNull();
+
+  // ----- résumé serveur des scans de campagne (alerte « déjà scanné »)
+  Future<void> appliquerScansResume(String campagneId, List data) async {
+    // ordre croissant -> le plus récent écrase (dernier appliqué)
+    final tries = List.from(data)
+      ..sort((a, b) => (a['scanne_le'] as String).compareTo(b['scanne_le'] as String));
+    await batch((b) {
+      for (final x in tries) {
+        b.insert(
+          scansCampagne,
+          ScansCampagneCompanion.insert(
+            campagneId: campagneId,
+            bienId: x['bien_id'] as String,
+            numero: x['bien_numero'] as String,
+            scanneLe: DateTime.parse(x['scanne_le'] as String),
+            agentNom: x['agent_nom'] as String,
+            pieceCode: x['piece_code'] as String,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
+  /// Le bien (par numéro) a-t-il déjà été scanné dans cette campagne ?
+  /// Fusionne le résumé serveur et les scans locaux de l'appareil ; renvoie le plus récent.
+  Future<DejaScanne?> dejaScanne(String campagneId, String numero) async {
+    DejaScanne? meilleur;
+
+    final serveur = await (select(scansCampagne)
+          ..where((x) => x.campagneId.equals(campagneId) & x.numero.equals(numero.trim()))
+          ..orderBy([(x) => OrderingTerm.desc(x.scanneLe)])
+          ..limit(1))
+        .getSingleOrNull();
+    if (serveur != null) {
+      meilleur = DejaScanne(serveur.scanneLe, serveur.agentNom, serveur.pieceCode);
+    }
+
+    final local = await (select(scansLocaux)
+          ..where((x) => x.campagneId.equals(campagneId) & x.numeroInventaire.equals(numero.trim()))
+          ..orderBy([(x) => OrderingTerm.desc(x.scanneLe)])
+          ..limit(1))
+        .getSingleOrNull();
+    if (local != null && (meilleur == null || local.scanneLe.isAfter(meilleur.scanneLe))) {
+      final piece = await (select(piecesCache)..where((p) => p.id.equals(local.pieceId))).getSingleOrNull();
+      meilleur = DejaScanne(local.scanneLe, 'vous', piece?.code ?? '');
+    }
+    return meilleur;
+  }
 
   // ----- file
   Future<int> compterEnAttente() async {

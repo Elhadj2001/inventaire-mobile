@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/database.dart';
 import '../data/sync_repository.dart';
 import '../services/api.dart';
+import 'session.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -61,6 +62,9 @@ class SyncController extends StateNotifier<SyncStatus> {
       final repo = _ref.read(syncRepositoryProvider);
       if (referentiel) await repo.rafraichirReferentiel();
       final res = await repo.pousser();
+      // Résumé des scans de la campagne ouverte (alerte « déjà scanné »).
+      final campagne = _ref.read(sessionProvider).campagne;
+      if (campagne != null) await repo.rafraichirScansCampagne(campagne.id);
       _ref.invalidate(referentielMajProvider);
       state = SyncStatus(
         SyncPhase.idle,

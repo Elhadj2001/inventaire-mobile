@@ -28,6 +28,15 @@ class SyncRepository {
     await _db.ecrireMeta('referentiel_maj_le', DateTime.now().toIso8601String());
   }
 
+  /// Rafraîchit le résumé des scans de la campagne (delta) pour l'alerte « déjà scanné ».
+  Future<void> rafraichirScansCampagne(String campagneId) async {
+    final cle = 'scans_resume_$campagneId';
+    final depuis = await _db.lireMeta(cle);
+    final data = await _api.scansResume(campagneId, depuis: depuis);
+    await _db.appliquerScansResume(campagneId, data['scans'] as List);
+    await _db.ecrireMeta(cle, data['genere_le'] as String);
+  }
+
   Map<String, dynamic> _payload(ScansLocauxData s) => {
         'id': s.id,
         'campagne_id': s.campagneId,

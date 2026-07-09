@@ -8,12 +8,14 @@ class ScanRecent {
   final String designation;
   final EtatConstate etat;
   final DateTime horodatage;
+  final bool deja; // était déjà scanné dans la campagne
 
   const ScanRecent({
     required this.numero,
     required this.designation,
     required this.etat,
     required this.horodatage,
+    this.deja = false,
   });
 }
 

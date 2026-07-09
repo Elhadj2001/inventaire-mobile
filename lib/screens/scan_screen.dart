@@ -35,7 +35,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   Future<void> _demarrerController() async {
     await _controller?.dispose();
-    final controller = MobileScannerController(autoStart: false);
+    final controller = MobileScannerController(
+      autoStart: false,
+      // Tous formats : QR + codes-barres 1D (les étiquettes IPD réelles sont en 1D).
+      formats: const [BarcodeFormat.all],
+    );
     if (!mounted) {
       await controller.dispose();
       return;
@@ -226,10 +230,12 @@ class _DerniersScans extends StatelessWidget {
           for (final s in session.recents.take(4))
             ListTile(
               dense: true,
-              leading: const Icon(Icons.check, color: IpdCouleurs.vert),
+              leading: Icon(s.deja ? Icons.warning_amber_rounded : Icons.check,
+                  color: s.deja ? IpdCouleurs.ambre : IpdCouleurs.vert),
               title: Text('${s.numero} — ${s.designation}',
                   maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text('${s.etat.label} · ${heure.format(s.horodatage)}'),
+              subtitle: Text(
+                  '${s.etat.label} · ${heure.format(s.horodatage)}${s.deja ? ' · déjà scanné' : ''}'),
             ),
         ],
       ),
