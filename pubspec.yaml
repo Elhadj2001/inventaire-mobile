@@ -1,7 +1,7 @@
 name: inventaire_mobile
 description: "Application d'inventaire par scan QR — Institut Pasteur de Dakar"
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -30,6 +30,14 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.20.0
   build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#00695C"
+  adaptive_icon_foreground: "assets/icon/icon.png"
 
 flutter:
   uses-material-design: true
