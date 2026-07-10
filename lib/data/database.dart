@@ -69,6 +69,7 @@ class ScansLocaux extends Table {
   TextColumn get statut => text().withDefault(const Constant('en_attente'))(); // en_attente|synchronise|rejete
   TextColumn get motif => text().nullable()();
   DateTimeColumn get creeLe => dateTime()();
+  BoolColumn get saisieManuelle => boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -101,20 +102,43 @@ class DejaScanne {
   const DejaScanne(this.scanneLe, this.par, this.pieceCode);
 }
 
+/// Feuille de route : affectations de l'agent pour la campagne (cache offline).
+class AffectationsCache extends Table {
+  TextColumn get id => text()();
+  TextColumn get campagneId => text()();
+  TextColumn get type => text()(); // lieu | piece
+  TextColumn get lieuId => text().nullable()();
+  TextColumn get lieuNom => text().nullable()();
+  TextColumn get pieceId => text().nullable()();
+  TextColumn get pieceCode => text().nullable()();
+  TextColumn get pieceLibelle => text().nullable()();
+  TextColumn get serviceId => text().nullable()();
+  IntColumn get piecesAffectees => integer()();
+  IntColumn get piecesScannees => integer()();
+  IntColumn get nbScans => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
-  tables: [LieuxCache, ServicesCache, PiecesCache, BiensCache, ServicesLocaux, ScansLocaux, Meta, ScansCampagne],
+  tables: [LieuxCache, ServicesCache, PiecesCache, BiensCache, ServicesLocaux, ScansLocaux, Meta, ScansCampagne, AffectationsCache],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'inventaire'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
         onUpgrade: (m, from, to) async {
           if (from < 2) await m.createTable(scansCampagne);
+          if (from < 3) {
+            await m.createTable(affectationsCache);
+            await m.addColumn(scansLocaux, scansLocaux.saisieManuelle);
+          }
         },
       );
 
@@ -130,6 +154,64 @@ class AppDatabase extends _$AppDatabase {
   // ----- résolution locale d'un bien par numéro
   Future<BiensCacheData?> bienParNumero(String numero) =>
       (select(biensCache)..where((b) => b.numeroInventaire.equals(numero.trim()))).getSingleOrNull();
+
+  /// Suggestions pour la saisie manuelle (aide à éviter les fautes).
+  Future<List<BiensCacheData>> chercherBiens(String q, {int limit = 8}) {
+    final motif = '%${q.trim()}%';
+    return (select(biensCache)
+          ..where((b) => b.numeroInventaire.like(motif) | b.designation.like(motif))
+          ..orderBy([(b) => OrderingTerm(expression: b.numeroInventaire)])
+          ..limit(limit))
+        .get();
+  }
+
+  // ----- feuille de route (affectations)
+  Future<void> appliquerAffectations(String campagneId, List data) async {
+    await (delete(affectationsCache)..where((a) => a.campagneId.equals(campagneId))).go();
+    if (data.isEmpty) return;
+    await batch((b) {
+      for (final x in data) {
+        b.insert(
+          affectationsCache,
+          AffectationsCacheCompanion.insert(
+            id: x['id'] as String,
+            campagneId: campagneId,
+            type: x['type'] as String,
+            lieuId: Value(x['lieu_id'] as String?),
+            lieuNom: Value(x['lieu_nom'] as String?),
+            pieceId: Value(x['piece_id'] as String?),
+            pieceCode: Value(x['piece_code'] as String?),
+            pieceLibelle: Value(x['piece_libelle'] as String?),
+            serviceId: Value(x['service_id'] as String?),
+            piecesAffectees: x['pieces_affectees'] as int? ?? 0,
+            piecesScannees: x['pieces_scannees'] as int? ?? 0,
+            nbScans: x['nb_scans'] as int? ?? 0,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
+  Future<LieuxCacheData?> lieuParId(String id) =>
+      (select(lieuxCache)..where((l) => l.id.equals(id))).getSingleOrNull();
+  Future<ServicesCacheData?> serviceParId(String id) =>
+      (select(servicesCache)..where((s) => s.id.equals(id))).getSingleOrNull();
+  Future<PiecesCacheData?> pieceParId(String id) =>
+      (select(piecesCache)..where((p) => p.id.equals(id))).getSingleOrNull();
+
+  Future<List<AffectationsCacheData>> mesAffectations(String campagneId) =>
+      (select(affectationsCache)
+            ..where((a) => a.campagneId.equals(campagneId))
+            ..orderBy([(a) => OrderingTerm(expression: a.type), (a) => OrderingTerm(expression: a.pieceCode)]))
+          .get();
+
+  /// Scans de l'appareil (de l'agent) créés depuis le début de la journée locale.
+  Future<List<ScansLocauxData>> scansDuJour(DateTime debutJour) =>
+      (select(scansLocaux)
+            ..where((s) => s.creeLe.isBiggerOrEqualValue(debutJour))
+            ..orderBy([(s) => OrderingTerm.desc(s.creeLe)]))
+          .get();
 
   // ----- résumé serveur des scans de campagne (alerte « déjà scanné »)
   Future<void> appliquerScansResume(String campagneId, List data) async {

@@ -211,12 +211,51 @@ class _ContenuCampagne extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: () => context.push('/progression'),
-          icon: const Icon(Icons.bar_chart),
-          label: const Text('Voir la progression'),
+        const _ScansDuJour(),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => context.push('/feuille-route'),
+                icon: const Icon(Icons.assignment_outlined),
+                label: const Text('Ma feuille de route'),
+              ),
+            ),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => context.push('/progression'),
+                icon: const Icon(Icons.bar_chart),
+                label: const Text('Progression'),
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+final _scansDuJourProvider = FutureProvider.autoDispose<int>((ref) async {
+  final n = DateTime.now();
+  final debut = DateTime(n.year, n.month, n.day);
+  final scans = await ref.watch(appDatabaseProvider).scansDuJour(debut);
+  return scans.length;
+});
+
+/// Compteur des scans de la journée (données locales, lisible offline).
+class _ScansDuJour extends ConsumerWidget {
+  const _ScansDuJour();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final n = ref.watch(_scansDuJourProvider).valueOrNull ?? 0;
+    return Card(
+      color: IpdCouleurs.bleuTint,
+      child: ListTile(
+        leading: const Icon(Icons.today, color: IpdCouleurs.bleuFonce),
+        title: Text('$n scan(s) aujourd’hui', style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('sur cet appareil'),
+      ),
     );
   }
 }

@@ -147,6 +147,12 @@ class ApiService {
     return r.data!;
   }
 
+  /// Feuille de route de l'agent connecté pour la campagne.
+  Future<List<dynamic>> mesAffectations(String campagneId) async {
+    final r = await _dio.get<List<dynamic>>('/campagnes/$campagneId/mes-affectations');
+    return r.data!;
+  }
+
   /// Résumé des biens déjà scannés dans une campagne (alerte « déjà scanné »).
   Future<Map<String, dynamic>> scansResume(String campagneId, {String? depuis}) async {
     final r = await _dio.get<Map<String, dynamic>>(

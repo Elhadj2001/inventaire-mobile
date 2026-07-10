@@ -62,9 +62,16 @@ class SyncController extends StateNotifier<SyncStatus> {
       final repo = _ref.read(syncRepositoryProvider);
       if (referentiel) await repo.rafraichirReferentiel();
       final res = await repo.pousser();
-      // Résumé des scans de la campagne ouverte (alerte « déjà scanné »).
+      // Campagne ouverte : résumé des scans (déjà scanné) + feuille de route + progression.
       final campagne = _ref.read(sessionProvider).campagne;
-      if (campagne != null) await repo.rafraichirScansCampagne(campagne.id);
+      if (campagne != null) {
+        await repo.rafraichirScansCampagne(campagne.id);
+        try {
+          await repo.rafraichirFeuilleDeRoute(campagne.id);
+        } catch (_) {
+          // feuille de route non critique : ne bloque pas la synchro des scans
+        }
+      }
       _ref.invalidate(referentielMajProvider);
       state = SyncStatus(
         SyncPhase.idle,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -37,6 +38,25 @@ class SyncRepository {
     await _db.ecrireMeta(cle, data['genere_le'] as String);
   }
 
+  /// Rafraîchit la feuille de route (affectations) et la progression globale (cache offline).
+  Future<void> rafraichirFeuilleDeRoute(String campagneId) async {
+    final affs = await _api.mesAffectations(campagneId);
+    await _db.appliquerAffectations(campagneId, affs);
+    final prog = await _api.progression(campagneId);
+    await _db.ecrireMeta('progression_$campagneId', jsonEncode({
+      'biens_actifs': prog.biensActifs,
+      'biens_scannes': prog.biensScannes,
+      'par_lieu': prog.parLieu
+          .map((l) => {
+                'lieu_code': l.lieuCode,
+                'lieu_nom': l.lieuNom,
+                'biens_actifs': l.biensActifs,
+                'biens_scannes': l.biensScannes,
+              })
+          .toList(),
+    }));
+  }
+
   Map<String, dynamic> _payload(ScansLocauxData s) => {
         'id': s.id,
         'campagne_id': s.campagneId,
@@ -48,6 +68,7 @@ class SyncRepository {
         'commentaire': ?s.commentaire,
         'photo_url': ?s.photoUrl,
         'scanne_le': s.scanneLe.toUtc().toIso8601String(),
+        'saisie_manuelle': s.saisieManuelle,
       };
 
   /// Remonte la file. Ordre : services provisoires -> photos -> lignes par lot.

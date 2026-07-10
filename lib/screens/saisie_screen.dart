@@ -17,7 +17,8 @@ import '../state/sync_state.dart';
 
 class SaisieScreen extends ConsumerStatefulWidget {
   final String numero;
-  const SaisieScreen({super.key, required this.numero});
+  final bool manuelle; // saisie manuelle (code illisible) : photo obligatoire
+  const SaisieScreen({super.key, required this.numero, this.manuelle = false});
 
   @override
   ConsumerState<SaisieScreen> createState() => _SaisieScreenState();
@@ -116,6 +117,7 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
       photoLocale: Value(_photoLocale),
       scanneLe: DateTime.now(), // heure de l'appareil au moment du scan
       creeLe: DateTime.now(),
+      saisieManuelle: Value(widget.manuelle),
     ));
 
     ref.read(sessionProvider.notifier).ajouterScan(ScanRecent(
@@ -273,17 +275,27 @@ class _SaisieScreenState extends ConsumerState<SaisieScreen> {
             OutlinedButton.icon(
               onPressed: _choisirPhoto,
               icon: const Icon(Icons.add_a_photo_outlined),
-              label: Text(_photoLocale == null ? 'Ajouter une photo' : 'Changer la photo'),
+              label: Text(_photoLocale == null
+                  ? (widget.manuelle ? 'Photo obligatoire *' : 'Ajouter une photo')
+                  : 'Changer la photo'),
             ),
           ],
         ),
+        if (widget.manuelle && _photoLocale == null)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text('Saisie manuelle : la photo (étiquette/bien) est obligatoire.',
+                style: TextStyle(color: IpdCouleurs.ambreFonce, fontSize: 12)),
+          ),
         const SizedBox(height: 24),
         FilledButton.icon(
-          onPressed: (_etat == null || _envoiEnCours) ? null : _enregistrer,
+          onPressed: (_etat == null || _envoiEnCours || (widget.manuelle && _photoLocale == null))
+              ? null
+              : _enregistrer,
           icon: _envoiEnCours
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.save),
-          label: const Text('Enregistrer le scan'),
+          label: Text(widget.manuelle ? 'Enregistrer (saisie manuelle)' : 'Enregistrer le scan'),
         ),
       ],
     );

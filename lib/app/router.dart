@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../screens/contexte_lieu_screen.dart';
 import '../screens/contexte_piece_screen.dart';
 import '../screens/contexte_service_screen.dart';
+import '../screens/feuille_route_screen.dart';
 import '../screens/file_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/progression_screen.dart';
+import '../screens/saisie_manuelle_screen.dart';
 import '../screens/saisie_screen.dart';
 import '../screens/scan_screen.dart';
 import '../state/auth.dart';
@@ -32,11 +34,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/contexte/service', builder: (c, s) => const ContexteServiceScreen()),
       GoRoute(path: '/contexte/piece', builder: (c, s) => const ContextePieceScreen()),
       GoRoute(path: '/scan', builder: (c, s) => const ScanScreen()),
+      GoRoute(path: '/saisie-manuelle', builder: (c, s) => const SaisieManuelleScreen()),
       GoRoute(
         path: '/saisie/:numero',
-        builder: (c, s) => SaisieScreen(numero: s.pathParameters['numero']!),
+        builder: (c, s) => SaisieScreen(
+          numero: s.pathParameters['numero']!,
+          manuelle: s.uri.queryParameters['manuelle'] == '1',
+        ),
       ),
       GoRoute(path: '/progression', builder: (c, s) => const ProgressionScreen()),
+      GoRoute(path: '/feuille-route', builder: (c, s) => const FeuilleRouteScreen()),
       GoRoute(path: '/file', builder: (c, s) => const FileScreen()),
     ],
   );

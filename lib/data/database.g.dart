@@ -1818,6 +1818,21 @@ class $ScansLocauxTable extends ScansLocaux
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _saisieManuelleMeta = const VerificationMeta(
+    'saisieManuelle',
+  );
+  @override
+  late final GeneratedColumn<bool> saisieManuelle = GeneratedColumn<bool>(
+    'saisie_manuelle',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("saisie_manuelle" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1835,6 +1850,7 @@ class $ScansLocauxTable extends ScansLocaux
     statut,
     motif,
     creeLe,
+    saisieManuelle,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1964,6 +1980,15 @@ class $ScansLocauxTable extends ScansLocaux
     } else if (isInserting) {
       context.missing(_creeLeMeta);
     }
+    if (data.containsKey('saisie_manuelle')) {
+      context.handle(
+        _saisieManuelleMeta,
+        saisieManuelle.isAcceptableOrUnknown(
+          data['saisie_manuelle']!,
+          _saisieManuelleMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2033,6 +2058,10 @@ class $ScansLocauxTable extends ScansLocaux
         DriftSqlType.dateTime,
         data['${effectivePrefix}cree_le'],
       )!,
+      saisieManuelle: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}saisie_manuelle'],
+      )!,
     );
   }
 
@@ -2058,6 +2087,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
   final String statut;
   final String? motif;
   final DateTime creeLe;
+  final bool saisieManuelle;
   const ScansLocauxData({
     required this.id,
     required this.campagneId,
@@ -2074,6 +2104,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
     required this.statut,
     this.motif,
     required this.creeLe,
+    required this.saisieManuelle,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2107,6 +2138,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
       map['motif'] = Variable<String>(motif);
     }
     map['cree_le'] = Variable<DateTime>(creeLe);
+    map['saisie_manuelle'] = Variable<bool>(saisieManuelle);
     return map;
   }
 
@@ -2141,6 +2173,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
           ? const Value.absent()
           : Value(motif),
       creeLe: Value(creeLe),
+      saisieManuelle: Value(saisieManuelle),
     );
   }
 
@@ -2165,6 +2198,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
       statut: serializer.fromJson<String>(json['statut']),
       motif: serializer.fromJson<String?>(json['motif']),
       creeLe: serializer.fromJson<DateTime>(json['creeLe']),
+      saisieManuelle: serializer.fromJson<bool>(json['saisieManuelle']),
     );
   }
   @override
@@ -2186,6 +2220,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
       'statut': serializer.toJson<String>(statut),
       'motif': serializer.toJson<String?>(motif),
       'creeLe': serializer.toJson<DateTime>(creeLe),
+      'saisieManuelle': serializer.toJson<bool>(saisieManuelle),
     };
   }
 
@@ -2205,6 +2240,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
     String? statut,
     Value<String?> motif = const Value.absent(),
     DateTime? creeLe,
+    bool? saisieManuelle,
   }) => ScansLocauxData(
     id: id ?? this.id,
     campagneId: campagneId ?? this.campagneId,
@@ -2223,6 +2259,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
     statut: statut ?? this.statut,
     motif: motif.present ? motif.value : this.motif,
     creeLe: creeLe ?? this.creeLe,
+    saisieManuelle: saisieManuelle ?? this.saisieManuelle,
   );
   ScansLocauxData copyWithCompanion(ScansLocauxCompanion data) {
     return ScansLocauxData(
@@ -2253,6 +2290,9 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
       statut: data.statut.present ? data.statut.value : this.statut,
       motif: data.motif.present ? data.motif.value : this.motif,
       creeLe: data.creeLe.present ? data.creeLe.value : this.creeLe,
+      saisieManuelle: data.saisieManuelle.present
+          ? data.saisieManuelle.value
+          : this.saisieManuelle,
     );
   }
 
@@ -2273,7 +2313,8 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
           ..write('scanneLe: $scanneLe, ')
           ..write('statut: $statut, ')
           ..write('motif: $motif, ')
-          ..write('creeLe: $creeLe')
+          ..write('creeLe: $creeLe, ')
+          ..write('saisieManuelle: $saisieManuelle')
           ..write(')'))
         .toString();
   }
@@ -2295,6 +2336,7 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
     statut,
     motif,
     creeLe,
+    saisieManuelle,
   );
   @override
   bool operator ==(Object other) =>
@@ -2314,7 +2356,8 @@ class ScansLocauxData extends DataClass implements Insertable<ScansLocauxData> {
           other.scanneLe == this.scanneLe &&
           other.statut == this.statut &&
           other.motif == this.motif &&
-          other.creeLe == this.creeLe);
+          other.creeLe == this.creeLe &&
+          other.saisieManuelle == this.saisieManuelle);
 }
 
 class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
@@ -2333,6 +2376,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
   final Value<String> statut;
   final Value<String?> motif;
   final Value<DateTime> creeLe;
+  final Value<bool> saisieManuelle;
   final Value<int> rowid;
   const ScansLocauxCompanion({
     this.id = const Value.absent(),
@@ -2350,6 +2394,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
     this.statut = const Value.absent(),
     this.motif = const Value.absent(),
     this.creeLe = const Value.absent(),
+    this.saisieManuelle = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ScansLocauxCompanion.insert({
@@ -2368,6 +2413,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
     this.statut = const Value.absent(),
     this.motif = const Value.absent(),
     required DateTime creeLe,
+    this.saisieManuelle = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        campagneId = Value(campagneId),
@@ -2392,6 +2438,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
     Expression<String>? statut,
     Expression<String>? motif,
     Expression<DateTime>? creeLe,
+    Expression<bool>? saisieManuelle,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2410,6 +2457,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
       if (statut != null) 'statut': statut,
       if (motif != null) 'motif': motif,
       if (creeLe != null) 'cree_le': creeLe,
+      if (saisieManuelle != null) 'saisie_manuelle': saisieManuelle,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2430,6 +2478,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
     Value<String>? statut,
     Value<String?>? motif,
     Value<DateTime>? creeLe,
+    Value<bool>? saisieManuelle,
     Value<int>? rowid,
   }) {
     return ScansLocauxCompanion(
@@ -2448,6 +2497,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
       statut: statut ?? this.statut,
       motif: motif ?? this.motif,
       creeLe: creeLe ?? this.creeLe,
+      saisieManuelle: saisieManuelle ?? this.saisieManuelle,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2500,6 +2550,9 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
     if (creeLe.present) {
       map['cree_le'] = Variable<DateTime>(creeLe.value);
     }
+    if (saisieManuelle.present) {
+      map['saisie_manuelle'] = Variable<bool>(saisieManuelle.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2524,6 +2577,7 @@ class ScansLocauxCompanion extends UpdateCompanion<ScansLocauxData> {
           ..write('statut: $statut, ')
           ..write('motif: $motif, ')
           ..write('creeLe: $creeLe, ')
+          ..write('saisieManuelle: $saisieManuelle, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3151,6 +3205,731 @@ class ScansCampagneCompanion extends UpdateCompanion<ScansCampagneData> {
   }
 }
 
+class $AffectationsCacheTable extends AffectationsCache
+    with TableInfo<$AffectationsCacheTable, AffectationsCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AffectationsCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _campagneIdMeta = const VerificationMeta(
+    'campagneId',
+  );
+  @override
+  late final GeneratedColumn<String> campagneId = GeneratedColumn<String>(
+    'campagne_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lieuIdMeta = const VerificationMeta('lieuId');
+  @override
+  late final GeneratedColumn<String> lieuId = GeneratedColumn<String>(
+    'lieu_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lieuNomMeta = const VerificationMeta(
+    'lieuNom',
+  );
+  @override
+  late final GeneratedColumn<String> lieuNom = GeneratedColumn<String>(
+    'lieu_nom',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pieceIdMeta = const VerificationMeta(
+    'pieceId',
+  );
+  @override
+  late final GeneratedColumn<String> pieceId = GeneratedColumn<String>(
+    'piece_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pieceCodeMeta = const VerificationMeta(
+    'pieceCode',
+  );
+  @override
+  late final GeneratedColumn<String> pieceCode = GeneratedColumn<String>(
+    'piece_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pieceLibelleMeta = const VerificationMeta(
+    'pieceLibelle',
+  );
+  @override
+  late final GeneratedColumn<String> pieceLibelle = GeneratedColumn<String>(
+    'piece_libelle',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serviceIdMeta = const VerificationMeta(
+    'serviceId',
+  );
+  @override
+  late final GeneratedColumn<String> serviceId = GeneratedColumn<String>(
+    'service_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _piecesAffecteesMeta = const VerificationMeta(
+    'piecesAffectees',
+  );
+  @override
+  late final GeneratedColumn<int> piecesAffectees = GeneratedColumn<int>(
+    'pieces_affectees',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _piecesScanneesMeta = const VerificationMeta(
+    'piecesScannees',
+  );
+  @override
+  late final GeneratedColumn<int> piecesScannees = GeneratedColumn<int>(
+    'pieces_scannees',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nbScansMeta = const VerificationMeta(
+    'nbScans',
+  );
+  @override
+  late final GeneratedColumn<int> nbScans = GeneratedColumn<int>(
+    'nb_scans',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    campagneId,
+    type,
+    lieuId,
+    lieuNom,
+    pieceId,
+    pieceCode,
+    pieceLibelle,
+    serviceId,
+    piecesAffectees,
+    piecesScannees,
+    nbScans,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'affectations_cache';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AffectationsCacheData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('campagne_id')) {
+      context.handle(
+        _campagneIdMeta,
+        campagneId.isAcceptableOrUnknown(data['campagne_id']!, _campagneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_campagneIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('lieu_id')) {
+      context.handle(
+        _lieuIdMeta,
+        lieuId.isAcceptableOrUnknown(data['lieu_id']!, _lieuIdMeta),
+      );
+    }
+    if (data.containsKey('lieu_nom')) {
+      context.handle(
+        _lieuNomMeta,
+        lieuNom.isAcceptableOrUnknown(data['lieu_nom']!, _lieuNomMeta),
+      );
+    }
+    if (data.containsKey('piece_id')) {
+      context.handle(
+        _pieceIdMeta,
+        pieceId.isAcceptableOrUnknown(data['piece_id']!, _pieceIdMeta),
+      );
+    }
+    if (data.containsKey('piece_code')) {
+      context.handle(
+        _pieceCodeMeta,
+        pieceCode.isAcceptableOrUnknown(data['piece_code']!, _pieceCodeMeta),
+      );
+    }
+    if (data.containsKey('piece_libelle')) {
+      context.handle(
+        _pieceLibelleMeta,
+        pieceLibelle.isAcceptableOrUnknown(
+          data['piece_libelle']!,
+          _pieceLibelleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_id')) {
+      context.handle(
+        _serviceIdMeta,
+        serviceId.isAcceptableOrUnknown(data['service_id']!, _serviceIdMeta),
+      );
+    }
+    if (data.containsKey('pieces_affectees')) {
+      context.handle(
+        _piecesAffecteesMeta,
+        piecesAffectees.isAcceptableOrUnknown(
+          data['pieces_affectees']!,
+          _piecesAffecteesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_piecesAffecteesMeta);
+    }
+    if (data.containsKey('pieces_scannees')) {
+      context.handle(
+        _piecesScanneesMeta,
+        piecesScannees.isAcceptableOrUnknown(
+          data['pieces_scannees']!,
+          _piecesScanneesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_piecesScanneesMeta);
+    }
+    if (data.containsKey('nb_scans')) {
+      context.handle(
+        _nbScansMeta,
+        nbScans.isAcceptableOrUnknown(data['nb_scans']!, _nbScansMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nbScansMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AffectationsCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AffectationsCacheData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      campagneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}campagne_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      lieuId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lieu_id'],
+      ),
+      lieuNom: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lieu_nom'],
+      ),
+      pieceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_id'],
+      ),
+      pieceCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_code'],
+      ),
+      pieceLibelle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}piece_libelle'],
+      ),
+      serviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}service_id'],
+      ),
+      piecesAffectees: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pieces_affectees'],
+      )!,
+      piecesScannees: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pieces_scannees'],
+      )!,
+      nbScans: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}nb_scans'],
+      )!,
+    );
+  }
+
+  @override
+  $AffectationsCacheTable createAlias(String alias) {
+    return $AffectationsCacheTable(attachedDatabase, alias);
+  }
+}
+
+class AffectationsCacheData extends DataClass
+    implements Insertable<AffectationsCacheData> {
+  final String id;
+  final String campagneId;
+  final String type;
+  final String? lieuId;
+  final String? lieuNom;
+  final String? pieceId;
+  final String? pieceCode;
+  final String? pieceLibelle;
+  final String? serviceId;
+  final int piecesAffectees;
+  final int piecesScannees;
+  final int nbScans;
+  const AffectationsCacheData({
+    required this.id,
+    required this.campagneId,
+    required this.type,
+    this.lieuId,
+    this.lieuNom,
+    this.pieceId,
+    this.pieceCode,
+    this.pieceLibelle,
+    this.serviceId,
+    required this.piecesAffectees,
+    required this.piecesScannees,
+    required this.nbScans,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['campagne_id'] = Variable<String>(campagneId);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || lieuId != null) {
+      map['lieu_id'] = Variable<String>(lieuId);
+    }
+    if (!nullToAbsent || lieuNom != null) {
+      map['lieu_nom'] = Variable<String>(lieuNom);
+    }
+    if (!nullToAbsent || pieceId != null) {
+      map['piece_id'] = Variable<String>(pieceId);
+    }
+    if (!nullToAbsent || pieceCode != null) {
+      map['piece_code'] = Variable<String>(pieceCode);
+    }
+    if (!nullToAbsent || pieceLibelle != null) {
+      map['piece_libelle'] = Variable<String>(pieceLibelle);
+    }
+    if (!nullToAbsent || serviceId != null) {
+      map['service_id'] = Variable<String>(serviceId);
+    }
+    map['pieces_affectees'] = Variable<int>(piecesAffectees);
+    map['pieces_scannees'] = Variable<int>(piecesScannees);
+    map['nb_scans'] = Variable<int>(nbScans);
+    return map;
+  }
+
+  AffectationsCacheCompanion toCompanion(bool nullToAbsent) {
+    return AffectationsCacheCompanion(
+      id: Value(id),
+      campagneId: Value(campagneId),
+      type: Value(type),
+      lieuId: lieuId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lieuId),
+      lieuNom: lieuNom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lieuNom),
+      pieceId: pieceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pieceId),
+      pieceCode: pieceCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pieceCode),
+      pieceLibelle: pieceLibelle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pieceLibelle),
+      serviceId: serviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serviceId),
+      piecesAffectees: Value(piecesAffectees),
+      piecesScannees: Value(piecesScannees),
+      nbScans: Value(nbScans),
+    );
+  }
+
+  factory AffectationsCacheData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AffectationsCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      campagneId: serializer.fromJson<String>(json['campagneId']),
+      type: serializer.fromJson<String>(json['type']),
+      lieuId: serializer.fromJson<String?>(json['lieuId']),
+      lieuNom: serializer.fromJson<String?>(json['lieuNom']),
+      pieceId: serializer.fromJson<String?>(json['pieceId']),
+      pieceCode: serializer.fromJson<String?>(json['pieceCode']),
+      pieceLibelle: serializer.fromJson<String?>(json['pieceLibelle']),
+      serviceId: serializer.fromJson<String?>(json['serviceId']),
+      piecesAffectees: serializer.fromJson<int>(json['piecesAffectees']),
+      piecesScannees: serializer.fromJson<int>(json['piecesScannees']),
+      nbScans: serializer.fromJson<int>(json['nbScans']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'campagneId': serializer.toJson<String>(campagneId),
+      'type': serializer.toJson<String>(type),
+      'lieuId': serializer.toJson<String?>(lieuId),
+      'lieuNom': serializer.toJson<String?>(lieuNom),
+      'pieceId': serializer.toJson<String?>(pieceId),
+      'pieceCode': serializer.toJson<String?>(pieceCode),
+      'pieceLibelle': serializer.toJson<String?>(pieceLibelle),
+      'serviceId': serializer.toJson<String?>(serviceId),
+      'piecesAffectees': serializer.toJson<int>(piecesAffectees),
+      'piecesScannees': serializer.toJson<int>(piecesScannees),
+      'nbScans': serializer.toJson<int>(nbScans),
+    };
+  }
+
+  AffectationsCacheData copyWith({
+    String? id,
+    String? campagneId,
+    String? type,
+    Value<String?> lieuId = const Value.absent(),
+    Value<String?> lieuNom = const Value.absent(),
+    Value<String?> pieceId = const Value.absent(),
+    Value<String?> pieceCode = const Value.absent(),
+    Value<String?> pieceLibelle = const Value.absent(),
+    Value<String?> serviceId = const Value.absent(),
+    int? piecesAffectees,
+    int? piecesScannees,
+    int? nbScans,
+  }) => AffectationsCacheData(
+    id: id ?? this.id,
+    campagneId: campagneId ?? this.campagneId,
+    type: type ?? this.type,
+    lieuId: lieuId.present ? lieuId.value : this.lieuId,
+    lieuNom: lieuNom.present ? lieuNom.value : this.lieuNom,
+    pieceId: pieceId.present ? pieceId.value : this.pieceId,
+    pieceCode: pieceCode.present ? pieceCode.value : this.pieceCode,
+    pieceLibelle: pieceLibelle.present ? pieceLibelle.value : this.pieceLibelle,
+    serviceId: serviceId.present ? serviceId.value : this.serviceId,
+    piecesAffectees: piecesAffectees ?? this.piecesAffectees,
+    piecesScannees: piecesScannees ?? this.piecesScannees,
+    nbScans: nbScans ?? this.nbScans,
+  );
+  AffectationsCacheData copyWithCompanion(AffectationsCacheCompanion data) {
+    return AffectationsCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      campagneId: data.campagneId.present
+          ? data.campagneId.value
+          : this.campagneId,
+      type: data.type.present ? data.type.value : this.type,
+      lieuId: data.lieuId.present ? data.lieuId.value : this.lieuId,
+      lieuNom: data.lieuNom.present ? data.lieuNom.value : this.lieuNom,
+      pieceId: data.pieceId.present ? data.pieceId.value : this.pieceId,
+      pieceCode: data.pieceCode.present ? data.pieceCode.value : this.pieceCode,
+      pieceLibelle: data.pieceLibelle.present
+          ? data.pieceLibelle.value
+          : this.pieceLibelle,
+      serviceId: data.serviceId.present ? data.serviceId.value : this.serviceId,
+      piecesAffectees: data.piecesAffectees.present
+          ? data.piecesAffectees.value
+          : this.piecesAffectees,
+      piecesScannees: data.piecesScannees.present
+          ? data.piecesScannees.value
+          : this.piecesScannees,
+      nbScans: data.nbScans.present ? data.nbScans.value : this.nbScans,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AffectationsCacheData(')
+          ..write('id: $id, ')
+          ..write('campagneId: $campagneId, ')
+          ..write('type: $type, ')
+          ..write('lieuId: $lieuId, ')
+          ..write('lieuNom: $lieuNom, ')
+          ..write('pieceId: $pieceId, ')
+          ..write('pieceCode: $pieceCode, ')
+          ..write('pieceLibelle: $pieceLibelle, ')
+          ..write('serviceId: $serviceId, ')
+          ..write('piecesAffectees: $piecesAffectees, ')
+          ..write('piecesScannees: $piecesScannees, ')
+          ..write('nbScans: $nbScans')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    campagneId,
+    type,
+    lieuId,
+    lieuNom,
+    pieceId,
+    pieceCode,
+    pieceLibelle,
+    serviceId,
+    piecesAffectees,
+    piecesScannees,
+    nbScans,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AffectationsCacheData &&
+          other.id == this.id &&
+          other.campagneId == this.campagneId &&
+          other.type == this.type &&
+          other.lieuId == this.lieuId &&
+          other.lieuNom == this.lieuNom &&
+          other.pieceId == this.pieceId &&
+          other.pieceCode == this.pieceCode &&
+          other.pieceLibelle == this.pieceLibelle &&
+          other.serviceId == this.serviceId &&
+          other.piecesAffectees == this.piecesAffectees &&
+          other.piecesScannees == this.piecesScannees &&
+          other.nbScans == this.nbScans);
+}
+
+class AffectationsCacheCompanion
+    extends UpdateCompanion<AffectationsCacheData> {
+  final Value<String> id;
+  final Value<String> campagneId;
+  final Value<String> type;
+  final Value<String?> lieuId;
+  final Value<String?> lieuNom;
+  final Value<String?> pieceId;
+  final Value<String?> pieceCode;
+  final Value<String?> pieceLibelle;
+  final Value<String?> serviceId;
+  final Value<int> piecesAffectees;
+  final Value<int> piecesScannees;
+  final Value<int> nbScans;
+  final Value<int> rowid;
+  const AffectationsCacheCompanion({
+    this.id = const Value.absent(),
+    this.campagneId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.lieuId = const Value.absent(),
+    this.lieuNom = const Value.absent(),
+    this.pieceId = const Value.absent(),
+    this.pieceCode = const Value.absent(),
+    this.pieceLibelle = const Value.absent(),
+    this.serviceId = const Value.absent(),
+    this.piecesAffectees = const Value.absent(),
+    this.piecesScannees = const Value.absent(),
+    this.nbScans = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AffectationsCacheCompanion.insert({
+    required String id,
+    required String campagneId,
+    required String type,
+    this.lieuId = const Value.absent(),
+    this.lieuNom = const Value.absent(),
+    this.pieceId = const Value.absent(),
+    this.pieceCode = const Value.absent(),
+    this.pieceLibelle = const Value.absent(),
+    this.serviceId = const Value.absent(),
+    required int piecesAffectees,
+    required int piecesScannees,
+    required int nbScans,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       campagneId = Value(campagneId),
+       type = Value(type),
+       piecesAffectees = Value(piecesAffectees),
+       piecesScannees = Value(piecesScannees),
+       nbScans = Value(nbScans);
+  static Insertable<AffectationsCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? campagneId,
+    Expression<String>? type,
+    Expression<String>? lieuId,
+    Expression<String>? lieuNom,
+    Expression<String>? pieceId,
+    Expression<String>? pieceCode,
+    Expression<String>? pieceLibelle,
+    Expression<String>? serviceId,
+    Expression<int>? piecesAffectees,
+    Expression<int>? piecesScannees,
+    Expression<int>? nbScans,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (campagneId != null) 'campagne_id': campagneId,
+      if (type != null) 'type': type,
+      if (lieuId != null) 'lieu_id': lieuId,
+      if (lieuNom != null) 'lieu_nom': lieuNom,
+      if (pieceId != null) 'piece_id': pieceId,
+      if (pieceCode != null) 'piece_code': pieceCode,
+      if (pieceLibelle != null) 'piece_libelle': pieceLibelle,
+      if (serviceId != null) 'service_id': serviceId,
+      if (piecesAffectees != null) 'pieces_affectees': piecesAffectees,
+      if (piecesScannees != null) 'pieces_scannees': piecesScannees,
+      if (nbScans != null) 'nb_scans': nbScans,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AffectationsCacheCompanion copyWith({
+    Value<String>? id,
+    Value<String>? campagneId,
+    Value<String>? type,
+    Value<String?>? lieuId,
+    Value<String?>? lieuNom,
+    Value<String?>? pieceId,
+    Value<String?>? pieceCode,
+    Value<String?>? pieceLibelle,
+    Value<String?>? serviceId,
+    Value<int>? piecesAffectees,
+    Value<int>? piecesScannees,
+    Value<int>? nbScans,
+    Value<int>? rowid,
+  }) {
+    return AffectationsCacheCompanion(
+      id: id ?? this.id,
+      campagneId: campagneId ?? this.campagneId,
+      type: type ?? this.type,
+      lieuId: lieuId ?? this.lieuId,
+      lieuNom: lieuNom ?? this.lieuNom,
+      pieceId: pieceId ?? this.pieceId,
+      pieceCode: pieceCode ?? this.pieceCode,
+      pieceLibelle: pieceLibelle ?? this.pieceLibelle,
+      serviceId: serviceId ?? this.serviceId,
+      piecesAffectees: piecesAffectees ?? this.piecesAffectees,
+      piecesScannees: piecesScannees ?? this.piecesScannees,
+      nbScans: nbScans ?? this.nbScans,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (campagneId.present) {
+      map['campagne_id'] = Variable<String>(campagneId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (lieuId.present) {
+      map['lieu_id'] = Variable<String>(lieuId.value);
+    }
+    if (lieuNom.present) {
+      map['lieu_nom'] = Variable<String>(lieuNom.value);
+    }
+    if (pieceId.present) {
+      map['piece_id'] = Variable<String>(pieceId.value);
+    }
+    if (pieceCode.present) {
+      map['piece_code'] = Variable<String>(pieceCode.value);
+    }
+    if (pieceLibelle.present) {
+      map['piece_libelle'] = Variable<String>(pieceLibelle.value);
+    }
+    if (serviceId.present) {
+      map['service_id'] = Variable<String>(serviceId.value);
+    }
+    if (piecesAffectees.present) {
+      map['pieces_affectees'] = Variable<int>(piecesAffectees.value);
+    }
+    if (piecesScannees.present) {
+      map['pieces_scannees'] = Variable<int>(piecesScannees.value);
+    }
+    if (nbScans.present) {
+      map['nb_scans'] = Variable<int>(nbScans.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AffectationsCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('campagneId: $campagneId, ')
+          ..write('type: $type, ')
+          ..write('lieuId: $lieuId, ')
+          ..write('lieuNom: $lieuNom, ')
+          ..write('pieceId: $pieceId, ')
+          ..write('pieceCode: $pieceCode, ')
+          ..write('pieceLibelle: $pieceLibelle, ')
+          ..write('serviceId: $serviceId, ')
+          ..write('piecesAffectees: $piecesAffectees, ')
+          ..write('piecesScannees: $piecesScannees, ')
+          ..write('nbScans: $nbScans, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3162,6 +3941,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ScansLocauxTable scansLocaux = $ScansLocauxTable(this);
   late final $MetaTable meta = $MetaTable(this);
   late final $ScansCampagneTable scansCampagne = $ScansCampagneTable(this);
+  late final $AffectationsCacheTable affectationsCache =
+      $AffectationsCacheTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3175,6 +3956,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     scansLocaux,
     meta,
     scansCampagne,
+    affectationsCache,
   ];
 }
 
@@ -4152,6 +4934,7 @@ typedef $$ScansLocauxTableCreateCompanionBuilder =
       Value<String> statut,
       Value<String?> motif,
       required DateTime creeLe,
+      Value<bool> saisieManuelle,
       Value<int> rowid,
     });
 typedef $$ScansLocauxTableUpdateCompanionBuilder =
@@ -4171,6 +4954,7 @@ typedef $$ScansLocauxTableUpdateCompanionBuilder =
       Value<String> statut,
       Value<String?> motif,
       Value<DateTime> creeLe,
+      Value<bool> saisieManuelle,
       Value<int> rowid,
     });
 
@@ -4255,6 +5039,11 @@ class $$ScansLocauxTableFilterComposer
 
   ColumnFilters<DateTime> get creeLe => $composableBuilder(
     column: $table.creeLe,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get saisieManuelle => $composableBuilder(
+    column: $table.saisieManuelle,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4342,6 +5131,11 @@ class $$ScansLocauxTableOrderingComposer
     column: $table.creeLe,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get saisieManuelle => $composableBuilder(
+    column: $table.saisieManuelle,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ScansLocauxTableAnnotationComposer
@@ -4409,6 +5203,11 @@ class $$ScansLocauxTableAnnotationComposer
 
   GeneratedColumn<DateTime> get creeLe =>
       $composableBuilder(column: $table.creeLe, builder: (column) => column);
+
+  GeneratedColumn<bool> get saisieManuelle => $composableBuilder(
+    column: $table.saisieManuelle,
+    builder: (column) => column,
+  );
 }
 
 class $$ScansLocauxTableTableManager
@@ -4457,6 +5256,7 @@ class $$ScansLocauxTableTableManager
                 Value<String> statut = const Value.absent(),
                 Value<String?> motif = const Value.absent(),
                 Value<DateTime> creeLe = const Value.absent(),
+                Value<bool> saisieManuelle = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ScansLocauxCompanion(
                 id: id,
@@ -4474,6 +5274,7 @@ class $$ScansLocauxTableTableManager
                 statut: statut,
                 motif: motif,
                 creeLe: creeLe,
+                saisieManuelle: saisieManuelle,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4493,6 +5294,7 @@ class $$ScansLocauxTableTableManager
                 Value<String> statut = const Value.absent(),
                 Value<String?> motif = const Value.absent(),
                 required DateTime creeLe,
+                Value<bool> saisieManuelle = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ScansLocauxCompanion.insert(
                 id: id,
@@ -4510,6 +5312,7 @@ class $$ScansLocauxTableTableManager
                 statut: statut,
                 motif: motif,
                 creeLe: creeLe,
+                saisieManuelle: saisieManuelle,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4890,6 +5693,360 @@ typedef $$ScansCampagneTableProcessedTableManager =
       ScansCampagneData,
       PrefetchHooks Function()
     >;
+typedef $$AffectationsCacheTableCreateCompanionBuilder =
+    AffectationsCacheCompanion Function({
+      required String id,
+      required String campagneId,
+      required String type,
+      Value<String?> lieuId,
+      Value<String?> lieuNom,
+      Value<String?> pieceId,
+      Value<String?> pieceCode,
+      Value<String?> pieceLibelle,
+      Value<String?> serviceId,
+      required int piecesAffectees,
+      required int piecesScannees,
+      required int nbScans,
+      Value<int> rowid,
+    });
+typedef $$AffectationsCacheTableUpdateCompanionBuilder =
+    AffectationsCacheCompanion Function({
+      Value<String> id,
+      Value<String> campagneId,
+      Value<String> type,
+      Value<String?> lieuId,
+      Value<String?> lieuNom,
+      Value<String?> pieceId,
+      Value<String?> pieceCode,
+      Value<String?> pieceLibelle,
+      Value<String?> serviceId,
+      Value<int> piecesAffectees,
+      Value<int> piecesScannees,
+      Value<int> nbScans,
+      Value<int> rowid,
+    });
+
+class $$AffectationsCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $AffectationsCacheTable> {
+  $$AffectationsCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lieuId => $composableBuilder(
+    column: $table.lieuId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lieuNom => $composableBuilder(
+    column: $table.lieuNom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceCode => $composableBuilder(
+    column: $table.pieceCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pieceLibelle => $composableBuilder(
+    column: $table.pieceLibelle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serviceId => $composableBuilder(
+    column: $table.serviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get piecesAffectees => $composableBuilder(
+    column: $table.piecesAffectees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get piecesScannees => $composableBuilder(
+    column: $table.piecesScannees,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nbScans => $composableBuilder(
+    column: $table.nbScans,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AffectationsCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $AffectationsCacheTable> {
+  $$AffectationsCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lieuId => $composableBuilder(
+    column: $table.lieuId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lieuNom => $composableBuilder(
+    column: $table.lieuNom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceId => $composableBuilder(
+    column: $table.pieceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceCode => $composableBuilder(
+    column: $table.pieceCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pieceLibelle => $composableBuilder(
+    column: $table.pieceLibelle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serviceId => $composableBuilder(
+    column: $table.serviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get piecesAffectees => $composableBuilder(
+    column: $table.piecesAffectees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get piecesScannees => $composableBuilder(
+    column: $table.piecesScannees,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nbScans => $composableBuilder(
+    column: $table.nbScans,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AffectationsCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AffectationsCacheTable> {
+  $$AffectationsCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get campagneId => $composableBuilder(
+    column: $table.campagneId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get lieuId =>
+      $composableBuilder(column: $table.lieuId, builder: (column) => column);
+
+  GeneratedColumn<String> get lieuNom =>
+      $composableBuilder(column: $table.lieuNom, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceId =>
+      $composableBuilder(column: $table.pieceId, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceCode =>
+      $composableBuilder(column: $table.pieceCode, builder: (column) => column);
+
+  GeneratedColumn<String> get pieceLibelle => $composableBuilder(
+    column: $table.pieceLibelle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get serviceId =>
+      $composableBuilder(column: $table.serviceId, builder: (column) => column);
+
+  GeneratedColumn<int> get piecesAffectees => $composableBuilder(
+    column: $table.piecesAffectees,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get piecesScannees => $composableBuilder(
+    column: $table.piecesScannees,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get nbScans =>
+      $composableBuilder(column: $table.nbScans, builder: (column) => column);
+}
+
+class $$AffectationsCacheTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AffectationsCacheTable,
+          AffectationsCacheData,
+          $$AffectationsCacheTableFilterComposer,
+          $$AffectationsCacheTableOrderingComposer,
+          $$AffectationsCacheTableAnnotationComposer,
+          $$AffectationsCacheTableCreateCompanionBuilder,
+          $$AffectationsCacheTableUpdateCompanionBuilder,
+          (
+            AffectationsCacheData,
+            BaseReferences<
+              _$AppDatabase,
+              $AffectationsCacheTable,
+              AffectationsCacheData
+            >,
+          ),
+          AffectationsCacheData,
+          PrefetchHooks Function()
+        > {
+  $$AffectationsCacheTableTableManager(
+    _$AppDatabase db,
+    $AffectationsCacheTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AffectationsCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AffectationsCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AffectationsCacheTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> campagneId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> lieuId = const Value.absent(),
+                Value<String?> lieuNom = const Value.absent(),
+                Value<String?> pieceId = const Value.absent(),
+                Value<String?> pieceCode = const Value.absent(),
+                Value<String?> pieceLibelle = const Value.absent(),
+                Value<String?> serviceId = const Value.absent(),
+                Value<int> piecesAffectees = const Value.absent(),
+                Value<int> piecesScannees = const Value.absent(),
+                Value<int> nbScans = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AffectationsCacheCompanion(
+                id: id,
+                campagneId: campagneId,
+                type: type,
+                lieuId: lieuId,
+                lieuNom: lieuNom,
+                pieceId: pieceId,
+                pieceCode: pieceCode,
+                pieceLibelle: pieceLibelle,
+                serviceId: serviceId,
+                piecesAffectees: piecesAffectees,
+                piecesScannees: piecesScannees,
+                nbScans: nbScans,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String campagneId,
+                required String type,
+                Value<String?> lieuId = const Value.absent(),
+                Value<String?> lieuNom = const Value.absent(),
+                Value<String?> pieceId = const Value.absent(),
+                Value<String?> pieceCode = const Value.absent(),
+                Value<String?> pieceLibelle = const Value.absent(),
+                Value<String?> serviceId = const Value.absent(),
+                required int piecesAffectees,
+                required int piecesScannees,
+                required int nbScans,
+                Value<int> rowid = const Value.absent(),
+              }) => AffectationsCacheCompanion.insert(
+                id: id,
+                campagneId: campagneId,
+                type: type,
+                lieuId: lieuId,
+                lieuNom: lieuNom,
+                pieceId: pieceId,
+                pieceCode: pieceCode,
+                pieceLibelle: pieceLibelle,
+                serviceId: serviceId,
+                piecesAffectees: piecesAffectees,
+                piecesScannees: piecesScannees,
+                nbScans: nbScans,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AffectationsCacheTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AffectationsCacheTable,
+      AffectationsCacheData,
+      $$AffectationsCacheTableFilterComposer,
+      $$AffectationsCacheTableOrderingComposer,
+      $$AffectationsCacheTableAnnotationComposer,
+      $$AffectationsCacheTableCreateCompanionBuilder,
+      $$AffectationsCacheTableUpdateCompanionBuilder,
+      (
+        AffectationsCacheData,
+        BaseReferences<
+          _$AppDatabase,
+          $AffectationsCacheTable,
+          AffectationsCacheData
+        >,
+      ),
+      AffectationsCacheData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4909,4 +6066,6 @@ class $AppDatabaseManager {
   $$MetaTableTableManager get meta => $$MetaTableTableManager(_db, _db.meta);
   $$ScansCampagneTableTableManager get scansCampagne =>
       $$ScansCampagneTableTableManager(_db, _db.scansCampagne);
+  $$AffectationsCacheTableTableManager get affectationsCache =>
+      $$AffectationsCacheTableTableManager(_db, _db.affectationsCache);
 }

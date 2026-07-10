@@ -103,6 +103,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         children: [
           _Bandeau(session: session),
           Expanded(child: _zoneCamera()),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/saisie-manuelle'),
+              icon: const Icon(Icons.edit_note),
+              label: const Text('Code illisible ? Saisir manuellement'),
+            ),
+          ),
           _DerniersScans(session: session),
         ],
       ),
