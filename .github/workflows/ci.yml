@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  analyze-test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: stable
+          cache: true
+
+      - name: Dépendances
+        run: flutter pub get
+
+      - name: Analyse statique
+        run: flutter analyze
+
+      - name: Tests
+        run: flutter test
+
+      # Build APK debug (non signé) pour attraper les erreurs de build.
+      # La keystore de release ne quitte pas la machine du commanditaire.
+      - name: Build APK (debug)
+        run: flutter build apk --debug --no-tree-shake-icons --dart-define=API_BASE_URL=https://example.invalid

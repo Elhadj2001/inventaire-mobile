@@ -1,5 +1,7 @@
 # Inventaire IPD — Application mobile
 
+[![CI](https://github.com/Elhadj2001/inventaire-mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/Elhadj2001/inventaire-mobile/actions/workflows/ci.yml)
+
 Application Android (Flutter) de scan QR pour l'inventaire de l'Institut Pasteur de Dakar.
 Fonctionne **en ligne et hors ligne** (référentiel embarqué, file de synchronisation
 idempotente), avec photos (Cloudinary).
