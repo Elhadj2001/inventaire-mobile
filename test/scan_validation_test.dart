@@ -55,15 +55,28 @@ void main() {
           EtatLecture.premiere);
     });
 
-    test('lecture invraisemblable = rejetee et réinitialise le candidat', () {
+    test('lecture invraisemblable = rejetee sans casser le candidat en cours', () {
       final v = ValidateurScan();
       expect(v.traiter('10001', vide, t0), EtatLecture.premiere);
-      // une fausse lecture au milieu casse la séquence
+      // une frame parasite au milieu est ignorée mais ne réinitialise PAS
       expect(v.traiter('99', vide, t0.add(const Duration(milliseconds: 100))),
           EtatLecture.rejetee);
-      // la lecture identique suivante redevient une première (pas une confirmation)
+      // la lecture identique suivante confirme quand même (candidat préservé)
       expect(v.traiter('10001', vide, t0.add(const Duration(milliseconds: 200))),
-          EtatLecture.premiere);
+          EtatLecture.confirmee);
+    });
+
+    test('numéro connu du cache = confirmé dès la première lecture', () {
+      final v = ValidateurScan();
+      expect(v.traiter('20437', {'20437', '10001'}, t0), EtatLecture.confirmee);
+    });
+
+    test('numéro plausible mais inconnu du cache exige la double lecture', () {
+      final v = ValidateurScan();
+      // 88888 respecte le motif mais n'est pas au cache -> première puis confirmée
+      expect(v.traiter('88888', {'20437'}, t0), EtatLecture.premiere);
+      expect(v.traiter('88888', {'20437'}, t0.add(const Duration(milliseconds: 200))),
+          EtatLecture.confirmee);
     });
   });
 

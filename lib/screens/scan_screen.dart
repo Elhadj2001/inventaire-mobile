@@ -24,7 +24,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   final ValidateurScan _validateur = ValidateurScan();
   Set<String> _numerosConnus = {};
-  String? _derniereRejetee;
+  String? _dernierBrut; // dernier code brut détecté (diagnostic)
+  EtatLecture? _dernierEtat; // verdict de la dernière lecture (diagnostic)
 
   @override
   void initState() {
@@ -49,6 +50,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     await _controller?.dispose();
     final controller = MobileScannerController(
       autoStart: false,
+      // Frames en continu : indispensable pour la double lecture (sinon un code
+      // n'est signalé qu'une fois et la confirmation n'arrive jamais).
+      detectionSpeed: DetectionSpeed.normal,
       // Formats restreints au strict nécessaire pour éviter les fausses lectures
       // (ML Kit invente des codes sur les symbologies sans checksum quand tous les
       // formats sont actifs) : QR (étiquettes Lot 5), Code 128 (étiquettes générées)
@@ -91,8 +95,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     // Deux barrières anti-fausse-lecture : vraisemblance + double lecture identique.
     final etat = _validateur.traiter(code, _numerosConnus, DateTime.now());
+    if (mounted) {
+      setState(() {
+        _dernierBrut = code;
+        _dernierEtat = etat;
+      });
+    }
     if (etat == EtatLecture.rejetee) {
-      if (mounted) setState(() => _derniereRejetee = code);
       return; // lecture ignorée, aucune navigation
     }
     if (etat == EtatLecture.premiere) {
@@ -101,7 +110,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     // etat == confirmee
     _navigating = true;
-    if (mounted) setState(() => _derniereRejetee = null);
     await _controller?.stop();
     if (mounted) {
       await context.push('/saisie/${Uri.encodeComponent(code)}');
@@ -145,23 +153,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_derniereRejetee != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.filter_alt_off_outlined,
-                            size: 16, color: IpdCouleurs.ambre),
-                        const SizedBox(width: 6),
-                        Text('Lecture rejetée (non plausible)',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: IpdCouleurs.ambre)),
-                      ],
-                    ),
-                  ),
+                _Diagnostic(
+                  brut: _dernierBrut,
+                  etat: _dernierEtat,
+                  nbConnus: _numerosConnus.length,
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: OutlinedButton.icon(
@@ -236,6 +232,59 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _Diagnostic extends StatelessWidget {
+  final String? brut;
+  final EtatLecture? etat;
+  final int nbConnus;
+  const _Diagnostic({required this.brut, required this.etat, required this.nbConnus});
+
+  @override
+  Widget build(BuildContext context) {
+    final petit = Theme.of(context).textTheme.bodySmall;
+    final (String texte, Color couleur, IconData icone) = brut == null
+        ? (
+            'Aucun code lu pour l’instant — cadrez le code-barres',
+            Theme.of(context).colorScheme.onSurfaceVariant,
+            Icons.qr_code_scanner,
+          )
+        : switch (etat) {
+            EtatLecture.confirmee => (
+                'Détecté : $brut · confirmé',
+                IpdCouleurs.vert,
+                Icons.check_circle_outline,
+              ),
+            EtatLecture.premiere => (
+                'Détecté : $brut · confirmation…',
+                IpdCouleurs.bleu,
+                Icons.hourglass_bottom,
+              ),
+            _ => (
+                'Détecté : $brut · rejeté (non plausible)',
+                IpdCouleurs.ambre,
+                Icons.filter_alt_off_outlined,
+              ),
+          };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icone, size: 16, color: couleur),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(texte,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: petit?.copyWith(color: couleur)),
+          ),
+          const SizedBox(width: 8),
+          Text('$nbConnus n° connus', style: petit),
+        ],
+      ),
     );
   }
 }

@@ -41,12 +41,22 @@ class ValidateurScan {
   bool estPlausible(String code, Set<String> numerosConnus) =>
       motifNumero.hasMatch(code) || numerosConnus.contains(code);
 
-  /// Soumet une lecture. Réinitialise le candidat sur toute lecture rejetée.
+  /// Soumet une lecture.
+  ///
+  /// - Numéro **connu du cache** (réel) : accepté immédiatement (le cas courant,
+  ///   scanner un bien du référentiel — pas besoin d'une seconde lecture).
+  /// - Numéro plausible mais **inconnu** du cache : double lecture exigée.
+  /// - Lecture **invraisemblable** : ignorée, **sans** casser le candidat en cours
+  ///   (une frame parasite ne doit pas annuler une confirmation en approche).
   EtatLecture traiter(String code, Set<String> numerosConnus, DateTime maintenant) {
-    if (!estPlausible(code, numerosConnus)) {
+    final connu = numerosConnus.contains(code);
+    if (!connu && !motifNumero.hasMatch(code)) {
+      return EtatLecture.rejetee;
+    }
+    if (connu) {
       _candidat = null;
       _vuLe = null;
-      return EtatLecture.rejetee;
+      return EtatLecture.confirmee;
     }
     final vu = _vuLe;
     if (_candidat == code && vu != null && maintenant.difference(vu) <= fenetre) {
