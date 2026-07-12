@@ -10,7 +10,7 @@ import 'app/theme.dart';
 // Vide ou build debug => désactivé (rien envoyé).
 const _sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
 const _sentryTest = bool.fromEnvironment('SENTRY_TEST', defaultValue: false);
-const _appVersion = '1.3.1';
+const _appVersion = '1.3.2';
 
 void main() {
   if (_sentryDsn.isEmpty || kDebugMode) {
@@ -29,7 +29,9 @@ void main() {
       if (_sentryTest) {
         // Déclencheur de test (Lot 10) : build avec --dart-define=SENTRY_TEST=true.
         Sentry.captureException(
-          Exception('Test Sentry mobile (Lot 10) — déclenché volontairement au démarrage.'),
+          Exception(
+            'Test Sentry mobile (Lot 10) — déclenché volontairement au démarrage.',
+          ),
         );
       }
       runApp(const ProviderScope(child: InventaireApp()));
@@ -47,6 +49,13 @@ class InventaireApp extends ConsumerWidget {
       title: 'Inventaire IPD',
       theme: themeIpd(),
       routerConfig: router,
+      // Rendu edge-to-edge Android : réserve la zone de la barre de navigation
+      // système en bas pour TOUS les écrans et les modales du navigator, afin que
+      // le contenu ne passe jamais dessous. Le haut reste géré par les AppBar
+      // (qui dessinent sous la barre d'état) ; les écrans sans AppBar (ex. login)
+      // ajoutent leur propre SafeArea pour protéger aussi le haut.
+      builder: (context, child) =>
+          SafeArea(top: false, child: child ?? const SizedBox.shrink()),
     );
   }
 }
