@@ -53,17 +53,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       // Frames en continu : indispensable pour la double lecture (sinon un code
       // n'est signalé qu'une fois et la confirmation n'arrive jamais).
       detectionSpeed: DetectionSpeed.normal,
-      // Formats restreints au strict nécessaire pour éviter les fausses lectures
-      // (ML Kit invente des codes sur les symbologies sans checksum quand tous les
-      // formats sont actifs) : QR (étiquettes Lot 5), Code 128 (étiquettes générées)
-      // et Code 39 = symbologie réelle des étiquettes-caisson IPD, confirmée par
-      // décodage de design/etiquette_modele.jpeg (« 20437 ») le 2026-07-12.
-      // Ni ITF, ni Codabar, ni EAN/UPC (sources classiques de codes fantômes).
-      formats: const [
-        BarcodeFormat.qrCode,
-        BarcodeFormat.code128,
-        BarcodeFormat.code39,
-      ],
+      // Détection LARGE (tous formats) : restreindre à QR/Code128/Code39 empêchait
+      // ML Kit de détecter les étiquettes-caisson réelles (Code 39, symbologie
+      // confirmée via design/etiquette_modele.jpeg = « 20437 »). Les codes fantômes
+      // (ITF/Codabar sans checksum) sont désormais neutralisés en aval par le
+      // filtre de vraisemblance + double lecture + cache (voir _onDetect /
+      // ValidateurScan), pas par la liste de formats.
+      formats: const [BarcodeFormat.all],
+      // Résolution élevée : plus de pixels sur les barres = meilleur décodage 1D.
+      cameraResolution: const Size(1920, 1080),
     );
     if (!mounted) {
       await controller.dispose();

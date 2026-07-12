@@ -10,7 +10,7 @@ import 'app/theme.dart';
 // Vide ou build debug => désactivé (rien envoyé).
 const _sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
 const _sentryTest = bool.fromEnvironment('SENTRY_TEST', defaultValue: false);
-const _appVersion = '1.3.4';
+const _appVersion = '1.3.5';
 
 void main() {
   if (_sentryDsn.isEmpty || kDebugMode) {
