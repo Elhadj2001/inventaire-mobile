@@ -155,6 +155,14 @@ class AppDatabase extends _$AppDatabase {
   Future<BiensCacheData?> bienParNumero(String numero) =>
       (select(biensCache)..where((b) => b.numeroInventaire.equals(numero.trim()))).getSingleOrNull();
 
+  /// Ensemble de tous les numéros d'inventaire connus (cache référentiel).
+  /// Sert de filtre de vraisemblance anti-fausse-lecture au scanner.
+  Future<Set<String>> numerosConnus() async {
+    final q = selectOnly(biensCache)..addColumns([biensCache.numeroInventaire]);
+    final rows = await q.map((r) => r.read(biensCache.numeroInventaire)).get();
+    return rows.whereType<String>().toSet();
+  }
+
   /// Suggestions pour la saisie manuelle (aide à éviter les fautes).
   Future<List<BiensCacheData>> chercherBiens(String q, {int limit = 8}) {
     final motif = '%${q.trim()}%';

@@ -6,7 +6,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app/theme.dart';
+import '../state/scan_validation.dart';
 import '../state/session.dart';
+import '../state/sync_state.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -20,10 +22,20 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   PermissionStatus? _permission;
   bool _navigating = false;
 
+  final ValidateurScan _validateur = ValidateurScan();
+  Set<String> _numerosConnus = {};
+  String? _derniereRejetee;
+
   @override
   void initState() {
     super.initState();
     _initialiser();
+    _chargerNumeros();
+  }
+
+  Future<void> _chargerNumeros() async {
+    final numeros = await ref.read(appDatabaseProvider).numerosConnus();
+    if (mounted) setState(() => _numerosConnus = numeros);
   }
 
   Future<void> _initialiser() async {
@@ -37,8 +49,17 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     await _controller?.dispose();
     final controller = MobileScannerController(
       autoStart: false,
-      // Tous formats : QR + codes-barres 1D (les étiquettes IPD réelles sont en 1D).
-      formats: const [BarcodeFormat.all],
+      // Formats restreints au strict nécessaire pour éviter les fausses lectures
+      // (ML Kit invente des codes sur les symbologies sans checksum quand tous les
+      // formats sont actifs) : QR (étiquettes Lot 5), Code 128 (étiquettes générées)
+      // et Code 39 = symbologie réelle des étiquettes-caisson IPD, confirmée par
+      // décodage de design/etiquette_modele.jpeg (« 20437 ») le 2026-07-12.
+      // Ni ITF, ni Codabar, ni EAN/UPC (sources classiques de codes fantômes).
+      formats: const [
+        BarcodeFormat.qrCode,
+        BarcodeFormat.code128,
+        BarcodeFormat.code39,
+      ],
     );
     if (!mounted) {
       await controller.dispose();
@@ -67,13 +88,27 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         .where((v) => v.isNotEmpty)
         .firstOrNull;
     if (code == null) return;
+
+    // Deux barrières anti-fausse-lecture : vraisemblance + double lecture identique.
+    final etat = _validateur.traiter(code, _numerosConnus, DateTime.now());
+    if (etat == EtatLecture.rejetee) {
+      if (mounted) setState(() => _derniereRejetee = code);
+      return; // lecture ignorée, aucune navigation
+    }
+    if (etat == EtatLecture.premiere) {
+      return; // on attend une deuxième lecture identique avant d'agir
+    }
+
+    // etat == confirmee
     _navigating = true;
+    if (mounted) setState(() => _derniereRejetee = null);
     await _controller?.stop();
     if (mounted) {
       await context.push('/saisie/${Uri.encodeComponent(code)}');
     }
     // retour automatique au scanner
     _navigating = false;
+    _validateur.reinitialiser();
     await _controller?.start();
   }
 
@@ -99,19 +134,46 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             ),
         ],
       ),
+      // La caméra dessine edge-to-edge (l'écran scan est exclu du SafeArea global) ;
+      // seuls les contrôles du bas sont protégés de la barre de navigation système.
       body: Column(
         children: [
           _Bandeau(session: session),
           Expanded(child: _zoneCamera()),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/saisie-manuelle'),
-              icon: const Icon(Icons.edit_note),
-              label: const Text('Code illisible ? Saisir manuellement'),
+          SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_derniereRejetee != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_alt_off_outlined,
+                            size: 16, color: IpdCouleurs.ambre),
+                        const SizedBox(width: 6),
+                        Text('Lecture rejetée (non plausible)',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: IpdCouleurs.ambre)),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/saisie-manuelle'),
+                    icon: const Icon(Icons.edit_note),
+                    label: const Text('Code illisible ? Saisir manuellement'),
+                  ),
+                ),
+                _DerniersScans(session: session),
+              ],
             ),
           ),
-          _DerniersScans(session: session),
         ],
       ),
     );
