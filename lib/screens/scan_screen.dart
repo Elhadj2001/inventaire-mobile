@@ -91,7 +91,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         .firstOrNull;
     if (code == null) return;
 
-    // Deux barrières anti-fausse-lecture : vraisemblance + double lecture identique.
+    // Double lecture identique (universelle) puis routage cache / non répertorié / rejet.
     final etat = _validateur.traiter(code, _numerosConnus, DateTime.now());
     if (mounted) {
       setState(() {
@@ -99,14 +99,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _dernierEtat = etat;
       });
     }
-    if (etat == EtatLecture.rejetee) {
-      return; // lecture ignorée, aucune navigation
-    }
-    if (etat == EtatLecture.premiere) {
-      return; // on attend une deuxième lecture identique avant d'agir
+    // premiere : on attend une 2e lecture identique. rejetee : ignorée silencieusement.
+    if (etat == EtatLecture.premiere || etat == EtatLecture.rejetee) {
+      return;
     }
 
-    // etat == confirmee
+    // connu OU nonRepertorie → on navigue vers la saisie (l'écran de saisie
+    // distingue lui-même bien connu / « à identifier »).
     _navigating = true;
     await _controller?.stop();
     if (mounted) {
@@ -250,10 +249,15 @@ class _Diagnostic extends StatelessWidget {
             Icons.qr_code_scanner,
           )
         : switch (etat) {
-            EtatLecture.confirmee => (
+            EtatLecture.connu => (
                 'Détecté : $brut · confirmé',
                 IpdCouleurs.vert,
                 Icons.check_circle_outline,
+              ),
+            EtatLecture.nonRepertorie => (
+                'Détecté : $brut · non répertorié (à enregistrer)',
+                IpdCouleurs.bleu,
+                Icons.help_outline,
               ),
             EtatLecture.premiere => (
                 'Détecté : $brut · confirmation…',
